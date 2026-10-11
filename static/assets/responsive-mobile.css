@@ -1,0 +1,91 @@
+/* Mobile & Responsive Polish for VocalRemover */
+@media (max-width: 768px) {
+  /* Prevent horizontal cutoffs and improve touch padding */
+  html, body {
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .pages .page {
+    padding: 1.5rem 1rem !important;
+    padding-top: 4.5rem !important;
+  }
+
+  /* Improve typography on small mobile screens */
+  .pages .page h1 {
+    font-size: 1.8rem !important;
+    line-height: 1.25 !important;
+    margin-bottom: 0.5rem !important;
+    word-break: break-word;
+  }
+
+  .pages .page h3 {
+    font-size: 1rem !important;
+    line-height: 1.4 !important;
+    margin: 0.5rem 0 1rem 0 !important;
+    opacity: 0.85;
+  }
+
+  /* Preview mockup images: fit nicely on phone screens */
+  .pages .page img {
+    max-width: 92vw !important;
+    height: auto !important;
+    padding: 1rem 0 !important;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    object-fit: contain;
+  }
+
+  /* Primary browse/upload button: comfortable touch target on mobile */
+  button.upload {
+    width: 100% !important;
+    max-width: 280px !important;
+    min-height: 3.2rem !important;
+    font-size: 1.05rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.03em !important;
+    border-radius: 2rem !important;
+    box-shadow: 0 4px 15px rgba(102, 93, 195, 0.35);
+  }
+
+  /* Player waveforms & sliders on mobile */
+  .player-waveform {
+    width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .player-waveform .volume .item {
+    padding: 0.5rem 1rem !important;
+  }
+
+  /* Bottom controls: spacing on mobile */
+  .page-player {
+    padding: 0 0.5rem 1.5rem !important;
+  }
+
+  .page-player .player-play button {
+    font-size: 1.8em !important;
+  }
+
+  .page-player .player-encode {
+    grid-gap: 0.75rem !important;
+    padding: 0.5rem !important;
+  }
+
+  .page-player .player-encode button {
+    min-height: 2.8rem !important;
+  }
+
+  /* Tools navigation drawer on mobile */
+  #app > nav.bar > .tools {
+    grid-template-columns: 1fr 1fr !important;
+    grid-gap: 0.75rem !important;
+    padding: 1rem 0.75rem !important;
+  }
+
+  #app > nav.bar > .tools > a {
+    padding: 0.75rem 0.5rem !important;
+    font-size: 0.85rem !important;
+    border-radius: 8px !important;
+  }
+}

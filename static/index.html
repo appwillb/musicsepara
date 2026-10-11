@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+  <head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Removedor Vocal e Isolamento [AI]</title>
+    <meta name="action-cable-url" content="/cable">
+    <style>
+      html {
+        background: #17171e
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-984f238b.js"></script>
+    <link rel="stylesheet" href="/assets/style-94964cad.css">
+    <link rel="stylesheet" href="/assets/responsive-mobile.css">
+    <script type="module">
+      import.meta.url;
+      import("_").catch(() => 1);
+      async function* g() {};
+      window.__vite_is_modern_browser = true;
+    </script>
+    <script type="module">
+      ! function() {
+        if (window.__vite_is_modern_browser) return;
+        console.warn("vite: loading legacy chunks, syntax error above and the same error below should be ignored");
+        var e = document.getElementById("vite-legacy-polyfill"),
+          n = document.createElement("script");
+        n.src = e.src, n.onload = function() {
+          System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))
+        }, document.body.appendChild(n)
+      }();
+    </script>
+    <meta name="description" content="Dividir a música em vocais separados e faixa instrumental. Perfeito para fazer faixas de apoio de karaoke ou extrator de acapella. Algoritmos de inteligência artificial são usados. É gratuito.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://vocalremover.org/pt/">
+    <meta property="og:title" content="Removedor Vocal e Isolamento">
+    <meta property="og:description" content="Separar a voz da música a partir de uma canção livre com poderosos algoritmos de inteligência artificial">
+    <meta property="og:image" content="https://vocalremover.org/img/remover/player_pt_1100x576.png">
+    <link rel="canonical" href="https://vocalremover.org/pt/">
+    <link rel="alternate" hreflang="ar" href="https://vocalremover.org/ar/">
+    <link rel="alternate" hreflang="bg" href="https://vocalremover.org/bg/">
+    <link rel="alternate" hreflang="cs" href="https://vocalremover.org/cs/">
+    <link rel="alternate" hreflang="da" href="https://vocalremover.org/da/">
+    <link rel="alternate" hreflang="de" href="https://vocalremover.org/de/">
+    <link rel="alternate" hreflang="el" href="https://vocalremover.org/el/">
+    <link rel="alternate" hreflang="en" href="https://vocalremover.org/">
+    <link rel="alternate" hreflang="es" href="https://vocalremover.org/es/">
+    <link rel="alternate" hreflang="et" href="https://vocalremover.org/et/">
+    <link rel="alternate" hreflang="fi" href="https://vocalremover.org/fi/">
+    <link rel="alternate" hreflang="fr" href="https://vocalremover.org/fr/">
+    <link rel="alternate" hreflang="he" href="https://vocalremover.org/he/">
+    <link rel="alternate" hreflang="hi" href="https://vocalremover.org/hi/">
+    <link rel="alternate" hreflang="hu" href="https://vocalremover.org/hu/">
+    <link rel="alternate" hreflang="id" href="https://vocalremover.org/id/">
+    <link rel="alternate" hreflang="it" href="https://vocalremover.org/it/">
+    <link rel="alternate" hreflang="ja" href="https://vocalremover.org/ja/">
+    <link rel="alternate" hreflang="ko" href="https://vocalremover.org/ko/">
+    <link rel="alternate" hreflang="lt" href="https://vocalremover.org/lt/">
+    <link rel="alternate" hreflang="lv" href="https://vocalremover.org/lv/">
+    <link rel="alternate" hreflang="nb" href="https://vocalremover.org/nb/">
+    <link rel="alternate" hreflang="nl" href="https://vocalremover.org/nl/">
+    <link rel="alternate" hreflang="pl" href="https://vocalremover.org/pl/">
+    <link rel="alternate" hreflang="pt" href="https://vocalremover.org/pt/">
+    <link rel="alternate" hreflang="ro" href="https://vocalremover.org/ro/">
+    <link rel="alternate" hreflang="ru" href="https://vocalremover.org/ru/">
+    <link rel="alternate" hreflang="sk" href="https://vocalremover.org/sk/">
+    <link rel="alternate" hreflang="sl" href="https://vocalremover.org/sl/">
+    <link rel="alternate" hreflang="sv" href="https://vocalremover.org/sv/">
+    <link rel="alternate" hreflang="th" href="https://vocalremover.org/th/">
+    <link rel="alternate" hreflang="tr" href="https://vocalremover.org/tr/">
+    <link rel="alternate" hreflang="uk" href="https://vocalremover.org/uk/">
+    <link rel="alternate" hreflang="vi" href="https://vocalremover.org/vi/">
+    <link rel="alternate" hreflang="zh" href="https://vocalremover.org/zh/">
+    <link rel="alternate" hreflang="x-default" href="https://vocalremover.org/">
+  </head>
+
+  <body>
+    <div id="app">
+      <nav class="bar">
+        <div class="tools"><a href="/pt/" class="router-link-active router-link-exact-active" aria-current="page"><svg aria-hidden="true" width="2.5em" height="1.7em" fill="currentColor" stroke="">
+              <use xlink:href="#icon-menu-remover"></use>
+            </svg> Removedor</a><a href="/pt/splitter-ai" class=""><svg aria-hidden="true" width="2.5em" height="1.7em" fill="currentColor" stroke="">
+              <use xlink:href="#icon-menu-splitter"></use>
+            </svg> Splitter</a><a href="/pt/pitch" class=""><svg aria-hidden="true" width="2.5em" height="1.7em" fill="currentColor" stroke="">
+              <use xlink:href="#icon-menu-pitch"></use>
+            </svg> Mudar de tom</a><a href="/pt/key-bpm-finder" class=""><svg aria-hidden="true" width="2.5em" height="1.7em" fill="currentColor" stroke="">
+              <use xlink:href="#icon-menu-bpm"></use>
+            </svg> Determinar Tom e BPM</a><a href="/pt/cutter" class=""><svg aria-hidden="true" width="2.5em" height="1.7em" fill="currentColor" stroke="">
+              <use xlink:href="#icon-menu-cutter"></use>
+            </svg> Cortador</a><a href="/pt/joiner" class=""><svg aria-hidden="true" width="2.5em" height="1.7em" fill="currentColor" stroke="">
+              <use xlink:href="#icon-menu-joiner"></use>
+            </svg> Juntar</a><a href="/pt/voice-recorder" class=""><svg aria-hidden="true" width="2.5em" height="1.7em" fill="currentColor" stroke="">
+              <use xlink:href="#icon-menu-recorder"></use>
+            </svg> Gravador</a><a href="/pt/karaoke" class=""><svg aria-hidden="true" width="2.5em" height="1.7em" fill="currentColor" stroke="">
+              <use xlink:href="#icon-menu-karaoke"></use>
+            </svg> Karaoke</a></div>
+        <div class="help"><a href="/support" class=""><svg aria-hidden="true" width="1.75em" height="1.75em" fill="currentColor" stroke="currentColor">
+              <use xlink:href="#icon-menu-help"></use>
+            </svg>
+            <div class="t">Ajuda</div>
+          </a><button class="link"><svg aria-hidden="true" width="2em" height="2em" fill="currentColor" stroke="">
+              <use xlink:href="#icon-flag-pt_BR"></use>
+            </svg></button></div>
+      </nav>
+      <main data-v-d335a5bf="" data-v-58a8a39f="" class="pages">
+        <div data-v-d335a5bf="" class="page centered">
+          <div data-v-d335a5bf="" class="top-menu">
+            <menu data-v-d335a5bf="">
+              <li data-v-d335a5bf=""><a data-v-d335a5bf="">Como funciona</a></li>
+              <li data-v-58a8a39f=""><a data-v-58a8a39f="" href="https://www.patreon.com/vocalremover" target="_blank">Doar</a></li>
+            </menu>
+          </div>
+          <h1 data-v-d335a5bf="">Removedor Vocal e Isolamento</h1>
+          <h3 data-v-d335a5bf="">Separar a voz da música a partir de uma canção livre com poderosos algoritmos de inteligência artificial</h3><img data-v-d335a5bf="" alt="Removedor Vocal e Isolamento" src="/img/remover/player_pt.png" srcset="/img/remover/player_pt.png 1x, /img/remover/player_pt@2x.png 2x"><input hidden="" type="file" accept=".wav,.mp3,.aac,.ogg,.wma,.flac,.alac,.aiff,audio/*"><button class="upload">Selecionar arquivo</button>
+        </div>
+        <div data-v-d335a5bf="" class="page info">
+          <h2 data-v-d335a5bf="">Remover a voz do cantor de qualquer música</h2>
+          <p data-v-d335a5bf="">Este aplicativo online gratuito ajudará a remover os vocais de uma canção criando karaoke.<br><br> Uma vez escolhida uma canção, a inteligência artificial separará os vocais dos vocais instrumentais. Você receberá duas faixas - uma versão karaoke de sua canção (sem vocais) e uma versão acapella (vocais isolados).<br><br> Apesar da complexidade e do alto custo de serviço, você pode usá-la absolutamente grátis. O processamento geralmente leva cerca de 10 segundos.</p>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      var features = [];
+      if (!window.Array.prototype.at) features.push('Array.prototype.at');
+      if (!window.Object.fromEntries) features.push('Object.fromEntries');
+      if (!window.ResizeObserver) features.push('ResizeObserver');
+      if (!window.IntersectionObserver) features.push('IntersectionObserver');
+      if (!window.matchMedia) features.push('matchMedia');
+      if (!window.devicePixelRatio) features.push('devicePixelRatio');
+      if (!window.Intl || !window.Intl.DisplayNames) features.push('Intl.DisplayNames.~locale.en');
+      if (!window.Element || !window.Element.prototype.scrollIntoView) features.push('scrollIntoView');
+
+      var url = 'https://polyfill.io/v3/polyfill.min.js?version=3.111.0&features=' + features.join(',');
+      if (features.length > 0) {
+        document.write('<script src="' + url + '"></scr' + 'ipt>')
+      }
+    </script>
+    <script nomodule>
+      ! function() {
+        var e = document,
+          t = e.createElement("script");
+        if (!("noModule" in t) && "onbeforeload" in t) {
+          var n = !1;
+          e.addEventListener("beforeload", (function(e) {
+            if (e.target === t) n = !0;
+            else if (!e.target.hasAttribute("nomodule") || !n) return;
+            e.preventDefault()
+          }), !0), t.type = "module", t.src = ".", e.head.appendChild(t), t.remove()
+        }
+      }();
+    </script>
+    <script nomodule crossorigin id="vite-legacy-polyfill" src="/assets/polyfills-legacy-60d49127.js"></script>
+    <script nomodule crossorigin id="vite-legacy-entry" data-src="/assets/index-legacy-8ee65d5c.js">
+      System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))
+    </script>
+  </body>
+
+</html>
