@@ -123,20 +123,7 @@
     </div>
 
     <script>
-      var features = [];
-      if (!window.Array.prototype.at) features.push('Array.prototype.at');
-      if (!window.Object.fromEntries) features.push('Object.fromEntries');
-      if (!window.ResizeObserver) features.push('ResizeObserver');
-      if (!window.IntersectionObserver) features.push('IntersectionObserver');
-      if (!window.matchMedia) features.push('matchMedia');
-      if (!window.devicePixelRatio) features.push('devicePixelRatio');
-      if (!window.Intl || !window.Intl.DisplayNames) features.push('Intl.DisplayNames.~locale.en');
-      if (!window.Element || !window.Element.prototype.scrollIntoView) features.push('scrollIntoView');
-
-      var url = 'https://polyfill.io/v3/polyfill.min.js?version=3.111.0&features=' + features.join(',');
-      if (features.length > 0) {
-        document.write('<script src="' + url + '"></scr' + 'ipt>')
-      }
+      // Clean modern browser environment
     </script>
     <script nomodule>
       ! function() {

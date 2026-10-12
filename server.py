@@ -39,6 +39,7 @@ active_connections: Dict[str, List[tuple]] = {}
 @app.get("/split/get_server")
 async def get_server():
     return {
+        "server": "1",
         "statusCode": 200,
         "data": {
             "server": "1"
