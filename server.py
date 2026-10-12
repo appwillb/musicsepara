@@ -104,12 +104,17 @@ async def run_demucs_task(task_id: str, input_path: Path, model: int):
     import torch
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
+    cores = str(max(1, (os.cpu_count() or 2)))
     cmd = [
         sys.executable,
         "-m",
         "demucs.separate",
         "-n", "htdemucs",
         "-d", device,
+        "--shifts", "1",
+        "--overlap", "0.1",
+        "-j", cores,
+        "--clip-mode", "clamp",
         "--filename", "{stem}.{ext}",
         "-o", str(task_out_dir),
         str(input_path),
