@@ -62,7 +62,7 @@ async def upload_split_tracks(file: UploadFile = File(...), model: int = Form(1)
         "id": task_id,
         "key": task_key,
         "filename": file.filename,
-        "status": "processing",
+        "status": "process",
         "progress": 0,
         "model": model,
         "s": "",
@@ -75,6 +75,13 @@ async def upload_split_tracks(file: UploadFile = File(...), model: int = Form(1)
     asyncio.create_task(run_demucs_task(task_id, input_file_path, model))
 
     return task_info
+
+
+@app.get("/split/status/{task_id}")
+async def get_task_status(task_id: str):
+    if task_id in tasks:
+        return tasks[task_id]
+    raise HTTPException(status_code=404, detail="Tarefa não encontrada")
 
 async def broadcast_ws(task_id: str, message: dict):
     if task_id in active_connections:
