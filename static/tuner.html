@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="/assets/lame.min.js"></script>
   <style>
     :root {
       --bg: #17171e;
@@ -633,9 +634,14 @@
 
           <audio id="audioPlayer" controls></audio>
 
-          <a href="#" class="btn-download" id="downloadBtn" download="voz_afinada_hq.wav">
-            <span>⬇️</span> Baixar Voz Afinada em Alta Resolução (WAV)
-          </a>
+          <div style="display: flex; gap: 12px; width: 100%; flex-wrap: wrap;">
+            <a href="#" class="btn-download" id="downloadWavBtn" download="voz_afinada_hq.wav" style="flex: 1; min-width: 200px;">
+              <span>⬇️</span> Baixar WAV (Qualidade Estúdio)
+            </a>
+            <button type="button" class="btn-download" id="downloadMp3Btn" style="flex: 1; min-width: 200px; background: #3b82f6;">
+              <span>🎵</span> Baixar MP3 (320 kbps)
+            </button>
+          </div>
         </div>
 
       </div>
@@ -662,6 +668,7 @@
     let currentFile = null;
     let originalAudioUrl = null;
     let tunedAudioUrl = null;
+    let tunedBlob = null;
     let currentMode = 'tuned';
 
     const dropZone = document.getElementById('dropZone');
@@ -774,11 +781,74 @@
         audioPlayer.src = tunedAudioUrl;
         audioPlayer.play();
 
-        // Botão Download
-        const downloadBtn = document.getElementById('downloadBtn');
-        downloadBtn.href = tunedAudioUrl;
+        tunedBlob = blob;
         const origBaseName = currentFile.name.replace(/\.[^/.]+$/, "");
-        downloadBtn.download = `${origBaseName}_afinada_${root}_${scale}.wav`;
+        const downloadWavBtn = document.getElementById('downloadWavBtn');
+        downloadWavBtn.href = tunedAudioUrl;
+        downloadWavBtn.download = `${origBaseName}_afinada_${root}_${scale}.wav`;
+
+        const downloadMp3Btn = document.getElementById('downloadMp3Btn');
+        downloadMp3Btn.onclick = async () => {
+          if (!tunedBlob) return;
+          const origText = downloadMp3Btn.innerText;
+          downloadMp3Btn.innerText = '⏳ Convertendo para MP3...';
+          downloadMp3Btn.disabled = true;
+          try {
+            const arrayBuffer = await tunedBlob.arrayBuffer();
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+            const numChannels = decoded.numberOfChannels;
+            const sampleRate = decoded.sampleRate;
+            const numSamples = decoded.length;
+            const mp3encoder = new lamejs.Mp3Encoder(numChannels, sampleRate, 320);
+
+            const leftInt16 = new Int16Array(numSamples);
+            const leftData = decoded.getChannelData(0);
+            for (let i = 0; i < numSamples; i++) {
+              let s = leftData[i];
+              s = s < -1 ? -1 : (s > 1 ? 1 : s);
+              leftInt16[i] = s < 0 ? s * 32768 : s * 32767;
+            }
+
+            let rightInt16 = leftInt16;
+            if (numChannels > 1) {
+              rightInt16 = new Int16Array(numSamples);
+              const rightData = decoded.getChannelData(1);
+              for (let i = 0; i < numSamples; i++) {
+                let s = rightData[i];
+                s = s < -1 ? -1 : (s > 1 ? 1 : s);
+                rightInt16[i] = s < 0 ? s * 32768 : s * 32767;
+              }
+            }
+
+            const mp3Data = [];
+            const blockSize = 1152;
+            for (let i = 0; i < numSamples; i += blockSize) {
+              const leftChunk = leftInt16.subarray(i, i + blockSize);
+              const rightChunk = numChannels > 1 ? rightInt16.subarray(i, i + blockSize) : leftChunk;
+              const mp3buf = (numChannels === 1)
+                ? mp3encoder.encodeBuffer(leftChunk)
+                : mp3encoder.encodeBuffer(leftChunk, rightChunk);
+              if (mp3buf.length > 0) mp3Data.push(mp3buf);
+            }
+            const flushBuf = mp3encoder.flush();
+            if (flushBuf.length > 0) mp3Data.push(flushBuf);
+
+            const mp3Blob = new Blob(mp3Data, { type: 'audio/mp3' });
+            const mp3Url = URL.createObjectURL(mp3Blob);
+            const a = document.createElement('a');
+            a.href = mp3Url;
+            a.download = `${origBaseName}_afinada_${root}_${scale}.mp3`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { a.remove(); URL.revokeObjectURL(mp3Url); }, 500);
+          } catch (e) {
+            alert('Erro ao converter para MP3: ' + e.message);
+          } finally {
+            downloadMp3Btn.innerText = origText;
+            downloadMp3Btn.disabled = false;
+          }
+        };
 
         resultSection.style.display = 'flex';
         toggleAudio('tuned');

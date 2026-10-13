@@ -11,6 +11,8 @@ dependencies = [
     "python-multipart>=0.0.32",
     "scipy>=1.18.1",
     "soundfile>=0.14.0",
+    "lameenc>=1.8.4",
+    "pyworld>=0.3.5",
     "uvicorn>=0.54.0",
     "websockets>=17.2",
 ]

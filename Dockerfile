@@ -21,6 +21,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
     websockets \
     soundfile \
     scipy \
+    lameenc \
+    pyworld \
     httpx \
     demucs
 

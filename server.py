@@ -6,7 +6,7 @@ import subprocess
 import sys
 import uuid
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -282,24 +282,125 @@ async def websocket_cable(websocket: WebSocket):
             ]
 
 
-# 4. Audio Stem Delivery API
-@app.get("/split/listen/{stem}/{task_id}/{key}")
-async def listen_stem(stem: str, task_id: str, key: str):
-    task_out_dir = OUTPUT_DIR / task_id
-    stem_file = task_out_dir / f"{stem}.wav"
+# 4. Audio Stem Delivery API & Helpers
+def ensure_mp3_converted(wav_path: Path, mp3_path: Path):
+    if mp3_path.exists():
+        return
+    ffmpeg_bin = shutil.which("ffmpeg")
+    if ffmpeg_bin:
+        try:
+            subprocess.run(
+                [ffmpeg_bin, "-y", "-i", str(wav_path), "-codec:a", "libmp3lame", "-b:a", "320k", str(mp3_path)],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            if mp3_path.exists():
+                return
+        except Exception:
+            pass
 
-    if not stem_file.exists():
-        # Fallback names
-        if stem == "vocal":
-            alt = task_out_dir / "vocals.wav"
-            if alt.exists():
-                return FileResponse(alt, media_type="audio/wav")
-        elif stem == "music":
-            alt = task_out_dir / "instrumental.wav"
-            if alt.exists():
-                return FileResponse(alt, media_type="audio/wav")
+    try:
+        import lameenc
+        import numpy as np
+        import soundfile as sf
+        data, sr = sf.read(str(wav_path), dtype="int16")
+        if data.ndim == 1:
+            data = np.column_stack([data, data])
+        encoder = lameenc.Encoder()
+        encoder.set_bit_rate(320)
+        encoder.set_in_sample_rate(sr)
+        encoder.set_channels(data.shape[1])
+        encoder.set_quality(2)
+        mp3_bytes = encoder.encode(data.tobytes()) + encoder.flush()
+        with open(mp3_path, "wb") as f:
+            f.write(mp3_bytes)
+    except Exception as e:
+        print(f"Error encoding MP3 for {wav_path}: {e}")
+
+def ensure_mix_created(task_out_dir: Path) -> Path:
+    mix_wav = task_out_dir / "mix.wav"
+    if mix_wav.exists():
+        return mix_wav
+    vocal_wav = task_out_dir / "vocal.wav"
+    if not vocal_wav.exists():
+        vocal_wav = task_out_dir / "vocals.wav"
+    music_wav = task_out_dir / "music.wav"
+    if not music_wav.exists():
+        music_wav = task_out_dir / "instrumental.wav"
+
+    if vocal_wav.exists() and music_wav.exists():
+        try:
+            import numpy as np
+            import soundfile as sf
+            v_data, sr_v = sf.read(str(vocal_wav), dtype="float32")
+            m_data, sr_m = sf.read(str(music_wav), dtype="float32")
+            max_len = max(len(v_data), len(m_data))
+            if len(v_data) < max_len:
+                v_data = np.pad(v_data, ((0, max_len - len(v_data)), (0, 0)) if v_data.ndim > 1 else (0, max_len - len(v_data)))
+            if len(m_data) < max_len:
+                m_data = np.pad(m_data, ((0, max_len - len(m_data)), (0, 0)) if m_data.ndim > 1 else (0, max_len - len(m_data)))
+            mix_data = v_data + m_data
+            peak = float(np.max(np.abs(mix_data)))
+            if peak > 1.0:
+                mix_data = mix_data / peak
+            sf.write(str(mix_wav), mix_data, sr_v, subtype="PCM_16")
+            return mix_wav
+        except Exception as e:
+            print("Mix error:", e)
+    return vocal_wav if vocal_wav.exists() else music_wav
+
+@app.get("/split/listen/{stem}/{task_id}/{key}")
+async def listen_stem(
+    stem: str,
+    task_id: str,
+    key: str,
+    codec: Optional[str] = None,
+    download: Optional[int] = None
+):
+    task_out_dir = OUTPUT_DIR / task_id
+
+    if stem == "mix":
+        stem_file = ensure_mix_created(task_out_dir)
+    else:
+        stem_file = task_out_dir / f"{stem}.wav"
+        if not stem_file.exists():
+            if stem == "vocal":
+                alt = task_out_dir / "vocals.wav"
+                if alt.exists():
+                    stem_file = alt
+            elif stem == "music":
+                alt = task_out_dir / "instrumental.wav"
+                if alt.exists():
+                    stem_file = alt
+
+    if not stem_file or not stem_file.exists():
         raise HTTPException(status_code=404, detail="Faixa não encontrada")
 
+    # If MP3 requested
+    if codec == "mp3":
+        mp3_file = task_out_dir / f"{stem}.mp3"
+        ensure_mp3_converted(stem_file, mp3_file)
+        if mp3_file.exists():
+            headers = {"Content-Disposition": f'attachment; filename="{stem}.mp3"'}
+            return FileResponse(
+                mp3_file,
+                media_type="audio/mpeg",
+                filename=f"{stem}.mp3",
+                headers=headers
+            )
+
+    # If explicit download requested for WAV
+    if download == 1 or codec == "wav":
+        headers = {"Content-Disposition": f'attachment; filename="{stem}.wav"'}
+        return FileResponse(
+            stem_file,
+            media_type="audio/wav",
+            filename=f"{stem}.wav",
+            headers=headers
+        )
+
+    # Default: inline stream for Web Audio player preview/playback
     return FileResponse(stem_file, media_type="audio/wav")
 
 # 5. Geolocation / User Mock Endpoints
