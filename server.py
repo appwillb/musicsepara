@@ -10,7 +10,8 @@ from typing import Dict, Any, List
 
 from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, Response
+
 from fastapi.staticfiles import StaticFiles
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -95,7 +96,9 @@ async def broadcast_ws(task_id: str, message: dict):
                 pass
 
 
-MODAL_GPU_URL = os.getenv("MODAL_GPU_URL", "https://appwillb--vocal-remover-ai-separate.us-east.modal.run")
+MODAL_GPU_URL = os.getenv("MODAL_GPU_URL", "https://appwillb--vocal-remover-ai-api.us-east.modal.run/separate")
+MODAL_TUNE_URL = os.getenv("MODAL_TUNE_URL", "https://appwillb--vocal-remover-ai-api.us-east.modal.run/tune")
+
 
 async def run_demucs_task(task_id: str, input_path: Path, model: int):
     task_out_dir = OUTPUT_DIR / task_id
@@ -314,7 +317,103 @@ async def get_user():
         "statusCode": 200
     }
 
+# 5.1 Vocal Studio Pitch Corrector API
+@app.post("/api/tune-vocal")
+async def tune_vocal_endpoint(
+    file: UploadFile = File(...),
+    root: str = Form("C"),
+    scale: str = Form("major"),
+    strength: float = Form(0.85),
+    retune_speed: float = Form(0.5),
+    preserve_vibrato: bool = Form(True)
+):
+    """
+    Endpoint para afinação vocal profissional:
+    1. Tenta via Modal Serverless GPU na nuvem
+    2. Fallback transparente local com vocal_tuner.py
+    """
+    import tempfile
+    audio_bytes = await file.read()
+    if not audio_bytes:
+        raise HTTPException(status_code=400, detail="Arquivo de audio vazio")
+
+    # 1. Tentar Modal GPU
+    if MODAL_TUNE_URL:
+        try:
+            import httpx
+            import base64
+            params = {
+                "root": root,
+                "scale": scale,
+                "strength": str(strength),
+                "retune_speed": str(retune_speed),
+                "preserve_vibrato": "true" if preserve_vibrato else "false"
+            }
+            async with httpx.AsyncClient(timeout=180.0) as client:
+                resp = await client.post(
+                    MODAL_TUNE_URL,
+                    params=params,
+                    content=audio_bytes,
+                    headers={"Content-Type": "application/octet-stream"}
+                )
+
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("status") == "success":
+                    tuned_bytes = base64.b64decode(data["tuned_b64"])
+                    print(f"[Tune] Áudio afinado com sucesso via Modal GPU ({root} {scale}, {strength*100:.0f}%)")
+                    return Response(content=tuned_bytes, media_type="audio/wav")
+                else:
+                    print("[Tune] Modal retornou erro interno:", data.get("error"))
+            else:
+                print("[Tune] Modal HTTP status:", resp.status_code, resp.text[:150])
+        except Exception as e:
+            print("[Tune] Erro ao conectar com Modal GPU, usando fallback local:", e)
+
+    # 2. Fallback Local via vocal_tuner.py
+    try:
+        from vocal_tuner import tune_vocal
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as in_f, \
+             tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as out_f:
+            in_path = in_f.name
+            out_path = out_f.name
+            in_f.write(audio_bytes)
+
+        tune_vocal(
+            in_path,
+            out_path,
+            root=root,
+            scale=scale,
+            strength=strength,
+            retune_speed=retune_speed,
+            preserve_vibrato=preserve_vibrato
+        )
+
+        with open(out_path, "rb") as f:
+            tuned_bytes = f.read()
+
+        try:
+            os.remove(in_path)
+            os.remove(out_path)
+        except Exception:
+            pass
+
+        print(f"[Tune] Áudio afinado via processador local ({root} {scale})")
+        return Response(content=tuned_bytes, media_type="audio/wav")
+    except Exception as e:
+        print("[Tune] Erro no fallback local:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/tuner")
+@app.get("/pt/tuner")
+async def serve_tuner_page():
+    tuner_file = STATIC_DIR / "tuner.html"
+    if tuner_file.exists():
+        return FileResponse(tuner_file)
+    return FileResponse(STATIC_DIR / "index.html")
+
 # 6. Serve static assets
+
 app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
 app.mount("/img", StaticFiles(directory=str(STATIC_DIR / "img")), name="img")
 

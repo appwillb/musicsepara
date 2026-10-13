@@ -51,7 +51,7 @@
               <use xlink:href="#icon-menu-recorder"></use>
             </svg> Recorder</a><a href="/karaoke" class=""><svg aria-hidden="true" width="2.5em" height="1.7em" fill="currentColor" stroke="">
               <use xlink:href="#icon-menu-karaoke"></use>
-            </svg> Karaoke</a></div>
+            </svg> Karaoke</a><a href="/tuner" class=""><svg aria-hidden="true" width="2.5em" height="1.7em" fill="currentColor"><use xlink:href="#icon-menu-pitch"></use></svg> Afinador IA</a></div>
         <div class="help"><a href="/support" class=""><svg aria-hidden="true" width="1.75em" height="1.75em" fill="currentColor" stroke="currentColor">
               <use xlink:href="#icon-menu-help"></use>
             </svg>

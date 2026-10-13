@@ -26,7 +26,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy application files
 COPY server.py /app/server.py
+COPY vocal_tuner.py /app/vocal_tuner.py
 COPY static /app/static
+
 
 RUN mkdir -p /app/uploads /app/outputs
 
