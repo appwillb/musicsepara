@@ -95,16 +95,62 @@ async def broadcast_ws(task_id: str, message: dict):
                 pass
 
 
+MODAL_GPU_URL = os.getenv("MODAL_GPU_URL", "https://appwillb--vocal-remover-ai-separate.us-east.modal.run")
+
 async def run_demucs_task(task_id: str, input_path: Path, model: int):
     task_out_dir = OUTPUT_DIR / task_id
     task_out_dir.mkdir(exist_ok=True)
 
     await broadcast_ws(task_id, {"status": "processing", "progress": 20})
 
+    # 1. Tentar via Modal Serverless GPU (Gratuito, rápido e não pesa na VPS)
+    if MODAL_GPU_URL:
+        try:
+            import httpx
+            import base64
+
+            await broadcast_ws(task_id, {"status": "processing", "progress": 40})
+            print(f"[{task_id}] Enviando audio para Modal GPU...")
+
+            audio_data = input_path.read_bytes()
+            async with httpx.AsyncClient(timeout=180.0) as client:
+                resp = await client.post(
+                    MODAL_GPU_URL,
+                    content=audio_data,
+                    headers={"Content-Type": "application/octet-stream"}
+                )
+
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("status") == "success":
+                    vocal_bytes = base64.b64decode(data["vocals_b64"])
+                    music_bytes = base64.b64decode(data["no_vocals_b64"])
+
+                    (task_out_dir / "vocal.wav").write_bytes(vocal_bytes)
+                    (task_out_dir / "music.wav").write_bytes(music_bytes)
+
+                    tasks[task_id]["status"] = "ready"
+                    await broadcast_ws(task_id, {
+                        "status": "ready",
+                        "id": task_id,
+                        "key": tasks[task_id]["key"],
+                        "tonality": "C",
+                        "bpm": 120
+                    })
+                    print(f"[{task_id}] Processamento concluído via Modal GPU com sucesso!")
+                    return
+                else:
+                    print(f"[{task_id}] Modal retornou erro interno:", data.get("error"))
+            else:
+                print(f"[{task_id}] Modal HTTP status:", resp.status_code)
+        except Exception as e:
+            print(f"[{task_id}] Erro na conexão com Modal GPU, tentando fallback:", e)
+
+    # 2. Fallback: Processamento local
     import torch
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    cores = str(max(1, (os.cpu_count() or 2)))
+    cores = "1" if device == "cuda" else str(max(1, (os.cpu_count() or 2)))
     cmd = [
         sys.executable,
         "-m",

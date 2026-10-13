@@ -21,8 +21,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
     websockets \
     soundfile \
     scipy \
-    demucs && \
-    python -c "from demucs.pretrained import get_model; get_model('htdemucs')"
+    httpx \
+    demucs
 
 # Copy application files
 COPY server.py /app/server.py
