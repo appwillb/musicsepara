@@ -1797,9 +1797,15 @@
           return;
         }
         try {
-          await fetch('/api/license/reset', { method: 'POST' });
+          if (window.api && typeof window.api.deactivateLicense === 'function') {
+            await window.api.deactivateLicense();
+          } else {
+            await fetch('/api/license/reset', { method: 'POST' });
+          }
           window.closeLicenseDetails();
-          window.checkLicenseState();
+          setTimeout(() => {
+            window.checkLicenseState();
+          }, 300);
         } catch (e) {
           alert('Erro ao desativar: ' + e.message);
         }
