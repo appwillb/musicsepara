@@ -90,6 +90,8 @@ async def license_gatekeeper_middleware(request, call_next):
         or path.startswith("/api/admin")
         or path.startswith("/download")
         or path.startswith("/stageprompter")
+        or path.startswith("/app")
+        or path.startswith("/studio")
         or path.startswith("/assets")
         or path.startswith("/fonts")
         or path.startswith("/img")
@@ -645,8 +647,19 @@ app.mount("/img", StaticFiles(directory=str(STATIC_DIR / "img")), name="img")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.mount("/output", StaticFiles(directory=str(OUTPUT_DIR)), name="output")
 
-# 7. Unified Desktop Workstation Entry Points
+LANDING_PAGE_FILE = STATIC_DIR / "landing.html"
+
+# 7. Official SaaS Landing Page & Web Studio Entry Points
 @app.get("/")
+async def serve_landing_page():
+    if LANDING_PAGE_FILE.exists():
+        return FileResponse(LANDING_PAGE_FILE)
+    return FileResponse(STAGEPROMPTER_DIR / "index.html")
+
+@app.get("/app")
+@app.get("/app/")
+@app.get("/studio")
+@app.get("/studio/")
 @app.get("/tunemusic")
 @app.get("/tunemusic/")
 @app.get("/pt/tunemusic")

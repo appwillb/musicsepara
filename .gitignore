@@ -37,6 +37,7 @@ search_lyrics_deobf.py
 eval_preload*.js
 *.txt
 *.html
+!static/landing.html
 !static/index.html
 !static/vocal_tools.html
 !static/stageprompter/index.html

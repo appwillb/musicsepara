@@ -3303,6 +3303,7 @@ html, body {
   border-color: #00f0ff !important;
 }
 
+#userBadge.hidden,
 .account-status-pill.hidden,
 .user-badge.hidden { display: none !important; }
 

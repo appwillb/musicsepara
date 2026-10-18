@@ -48,7 +48,7 @@
           </button>
 
           <!-- STATUS DA CONTA TUNEMUSIC (CLIQUE PARA VER CERTIFICADO DA LICENÇA) -->
-          <div id="userBadge" class="account-status-pill hidden" title="Clique para ver Detalhes da Licença tunemusic Pro" onclick="openLicenseDetails();" style="cursor: pointer !important; pointer-events: auto !important;">
+          <div id="userBadge" class="account-status-pill hidden" title="Clique para ver Detalhes da Licença tunemusic Pro" onclick="openLicenseDetails();" style="display:none !important; cursor: pointer !important; pointer-events: auto !important;">
             <div id="userBadgeAvatar" class="asp-avatar">👑</div>
             <div class="ub-info asp-info">
               <span id="userBadgeName" class="asp-name">tunemusic Pro</span>
@@ -1648,6 +1648,7 @@
             // Unlocked state
             if (actModal) actModal.classList.add('hidden');
             if (userBadge) {
+              userBadge.style.setProperty('display', 'inline-flex', 'important');
               userBadge.classList.remove('hidden');
               if (badgeName) badgeName.textContent = data.client || 'tunemusic Pro';
               if (badgePlan) badgePlan.textContent = (data.plan || 'PRO').replace('tunemusic ', '').toUpperCase();
@@ -1657,7 +1658,10 @@
             // Locked state (unlicensed)
             if (actModal) actModal.classList.remove('hidden');
             if (hwidInput && data.hwid) hwidInput.value = data.hwid;
-            if (userBadge) userBadge.classList.add('hidden');
+            if (userBadge) {
+              userBadge.style.setProperty('display', 'none', 'important');
+              userBadge.classList.add('hidden');
+            }
           }
         } catch (err) {
           console.warn('[License Manager] Erro ao verificar licença:', err);
