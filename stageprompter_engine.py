@@ -41,12 +41,19 @@ if not os.path.exists(FFMPEG_BIN):
         if sp_ffmpeg.exists():
             FFMPEG_BIN = str(sp_ffmpeg)
 
-# Fonts detection
+# Fonts detection (Windows & Linux / Docker)
 FONT_PATH = "C:/Windows/Fonts/segoeuib.ttf"
-if not os.path.exists(FONT_PATH):
-    FONT_PATH = "C:/Windows/Fonts/arialbd.ttf"
-if not os.path.exists(FONT_PATH):
-    FONT_PATH = "C:/Windows/Fonts/arial.ttf"
+for p in [
+    "C:/Windows/Fonts/segoeuib.ttf",
+    "C:/Windows/Fonts/arialbd.ttf",
+    "C:/Windows/Fonts/arial.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+]:
+    if os.path.exists(p):
+        FONT_PATH = p
+        break
 
 router = APIRouter(prefix="/api/stageprompter", tags=["StagePrompter"])
 

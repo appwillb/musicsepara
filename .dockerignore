@@ -1,0 +1,15 @@
+.venv/
+.git/
+dist_installer/
+launcher/
+uploads/
+outputs/
+scratch/
+extracted_stageprompter/
+__pycache__/
+*.pyc
+*.ico
+*.wav
+*.mp3
+data/license.lic
+data/licencas_emitidas.*

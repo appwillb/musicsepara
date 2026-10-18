@@ -11,7 +11,9 @@ services:
     volumes:
       - uploads_data:/app/uploads
       - outputs_data:/app/outputs
+      - data_storage:/app/data
 
 volumes:
   uploads_data:
   outputs_data:
+  data_storage:

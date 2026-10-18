@@ -1,0 +1,48 @@
+================================================================================
+                    CONTRATO DE LICENÇA DE USO DE SOFTWARE
+                           tunemusic Pro Workstation
+================================================================================
+
+LEIA COM ATENÇÃO OS SEGUINTES TERMOS ANTES DE CONCLUIR A INSTALAÇÃO.
+
+AO CLICAR EM "AVANÇAR" OU INSTALAR O SOFTWARE tunemusic Pro, VOCÊ CONCORDA EM 
+ESTAR VINCULADO AOS TERMOS E CONDIÇÕES DESTE CONTRATO DE LICENÇA. SE VOCÊ NÃO 
+CONCORDAR, NÃO INSTALE NEM UTILIZE ESTE SOFTWARE.
+
+1. CONCESSÃO DA LICENÇA
+A tunemusic concede a você uma licença pessoal, não exclusiva, intransferível e 
+revogável para instalar e executar o software tunemusic Pro exclusivamente no 
+número de computadores autorizados na compra.
+
+2. VINCULAÇÃO DE HARDWARE (1 PC - HARDWARE LOCK)
+O tunemusic Pro utiliza um mecanismo criptográfico avançado que vincula a chave de 
+ativação à assinatura digital do hardware (Placa-Mãe, Processador e Disco Principal) 
+do computador de instalação. A chave gerada é válida estritamente para o dispositivo 
+registrado e não pode ser compartilhada ou transferida para terceiros sem prévia 
+autorização da equipe de suporte.
+
+3. RESTRIÇÕES E PROTEÇÃO DE CÓDIGO
+É expressamente proibido:
+a) Realizar engenharia reversa, descompilação, desmontagem (disassembly), 
+   ou tentativa de derivar o código-fonte deste software;
+b) Modificar, burlar, quebrar ou neutralizar o sistema de validação de licenças;
+c) Alugar, arrendar, sublicenciar, redistribuir ou revender cópias deste software;
+d) Remover quaisquer avisos de direitos autorais, marcas registradas ou marcas d'água.
+
+4. MODELOS DE INTELIGÊNCIA ARTIFICIAL E PROCESSAMENTO LOCAL
+O processamento de áudio, separação de faixas (Demucs v4), teleprompter e 
+ferramentas de estúdio ocorrem localmente em seu computador para garantir total 
+privacidade e velocidade em tempo real. O desempenho depende da capacidade do 
+hardware (processador, memória RAM e placa gráfica).
+
+5. SUPORTE E ATUALIZAÇÕES
+O titular da licença terá direito a suporte técnico e eventuais correções de 
+versão disponibilizadas oficialmente pelos canais da tunemusic.
+
+6. LIMITAÇÃO DE RESPONSABILIDADE
+Em nenhuma hipótese a tunemusic será responsável por danos indiretos, lucros 
+cessantes, perda de dados ou interrupção de atividades decorrentes do uso ou da 
+impossibilidade de uso deste software.
+
+Copyright © 2026 tunemusic Software. Todos os direitos reservados.
+================================================================================

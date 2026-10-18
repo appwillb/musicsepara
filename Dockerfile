@@ -5,14 +5,16 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Install system audio dependencies (ffmpeg, libsndfile)
+# Install system audio dependencies and typography fonts
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libsndfile1 \
+    fonts-dejavu-core \
+    fonts-liberation \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PyTorch & Demucs & FastAPI & Uvicorn
+# Install PyTorch & Demucs & FastAPI & Uvicorn & dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
     fastapi \
@@ -23,15 +25,15 @@ RUN pip install --no-cache-dir --upgrade pip && \
     scipy \
     lameenc \
     httpx \
+    beautifulsoup4 \
+    pillow \
     demucs
 
-# Copy application files
-COPY server.py /app/server.py
-COPY vocal_tuner.py /app/vocal_tuner.py
-COPY static /app/static
+# Copy application files (excluding items in .dockerignore)
+COPY . /app
 
-
-RUN mkdir -p /app/uploads /app/outputs
+# Ensure runtime directories exist with appropriate permissions
+RUN mkdir -p /app/uploads /app/outputs /app/data/stageprompter
 
 EXPOSE 8000
 

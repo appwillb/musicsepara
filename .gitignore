@@ -41,3 +41,9 @@ eval_preload*.js
 !static/vocal_tools.html
 !static/stageprompter/index.html
 !static/stageprompter/presentation.html
+!installer/LICENCA_TERMOS.txt
+
+# Installer build artifacts
+dist_installer/
+tunemusic.exe
+
