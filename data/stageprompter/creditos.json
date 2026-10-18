@@ -1,0 +1,57 @@
+{
+  "agradecimentos": [
+    [
+      {
+        "t": "PATROCINADORES",
+        "cor": "#FFD400"
+      },
+      {
+        "t": "Cervejaria Premium"
+      },
+      {
+        "t": "Hotel & Eventos Plaza"
+      }
+    ],
+    [
+      {
+        "t": "EQUIPE TÉCNICA",
+        "cor": "#00E5FF"
+      },
+      {
+        "t": "Iluminação: Marcos Som"
+      },
+      {
+        "t": "Técnico de PA: Rodrigo"
+      }
+    ]
+  ],
+  "participacoes": [
+    [
+      {
+        "t": "PARTICIPAÇÕES ESPECIAIS",
+        "cor": "#FF8A3D"
+      },
+      {
+        "t": "DJ Alok - Set Especial"
+      },
+      {
+        "t": "Banda Convidada"
+      }
+    ]
+  ],
+  "avisos": [
+    [
+      {
+        "t": "AVISOS DA PRODUÇÃO",
+        "cor": "#1DB954"
+      },
+      {
+        "t": "Proibido garrafas de vidro"
+      },
+      {
+        "t": "Estacionamento liberado até 04h"
+      }
+    ]
+  ],
+  "tituloAvisos": "Avisos"
+}

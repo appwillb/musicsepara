@@ -5,11 +5,275 @@
     <meta charset="UTF-8">
     <link rel="icon" href="/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Removedor Vocal e Isolamento [AI]</title>
+    <title>tunemusic • Removedor Vocal & Teleprompter</title>
     <meta name="action-cable-url" content="/cable">
     <style>
-      html {
-        background: #17171e
+      html, body {
+        background: #0d0f15 !important;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        user-select: none;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+
+      /* Desktop Studio Header */
+      #desktop-studio-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: rgba(14, 17, 24, 0.98);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 18px;
+        z-index: 999999;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      }
+
+      .dsb-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+      }
+
+      .dsb-logo {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #10b981, #00e5ff);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        box-shadow: 0 2px 10px rgba(0, 229, 255, 0.3);
+      }
+
+      .dsb-title {
+        font-weight: 800;
+        font-size: 1.05rem;
+        letter-spacing: -0.3px;
+        color: #fff;
+      }
+
+      .dsb-badge {
+        background: rgba(0, 229, 255, 0.12);
+        color: #00e5ff;
+        border: 1px solid rgba(0, 229, 255, 0.35);
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 4px;
+        letter-spacing: 0.5px;
+        margin-left: 6px;
+      }
+
+      .dsb-nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .dsb-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 15px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #94a3b8;
+        background: transparent;
+        border: 1px solid transparent;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+      }
+
+      .dsb-btn:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .dsb-btn.active {
+        color: #fff;
+        background: rgba(16, 185, 129, 0.16);
+        border-color: rgba(16, 185, 129, 0.5);
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+      }
+
+      .dsb-btn.sp-tab {
+        color: #00e5ff;
+        background: rgba(0, 229, 255, 0.1);
+        border-color: rgba(0, 229, 255, 0.3);
+      }
+
+      .dsb-btn.sp-tab:hover {
+        color: #fff;
+        background: rgba(0, 229, 255, 0.22);
+        border-color: #00e5ff;
+        box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+      }
+
+      .dsb-btn.telao-tab {
+        background: rgba(255, 215, 0, 0.12);
+        color: #ffd700;
+        border-color: rgba(255, 215, 0, 0.3);
+      }
+
+      .dsb-btn.telao-tab:hover {
+        background: rgba(255, 215, 0, 0.22);
+        border-color: #ffd700;
+        color: #fff;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+      }
+
+      .dsb-status {
+        font-size: 0.76rem;
+        font-weight: 700;
+        color: #10b981;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        padding: 4px 10px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .dsb-dot {
+        width: 7px;
+        height: 7px;
+        background: #10b981;
+        border-radius: 50%;
+        box-shadow: 0 0 8px #10b981;
+      }
+
+      /* Adjust Main Layout to sit below Desktop Header */
+      #app {
+        padding-top: 50px !important;
+        height: calc(100vh - 50px) !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Fix Left Sidebar: Desktop Studio Polish */
+      #app > nav.bar {
+        padding-top: 1rem !important;
+        background: #10121a !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+        scrollbar-width: none !important;
+        width: 105px !important;
+      }
+
+      #app > nav.bar > .tools {
+        overflow-y: hidden !important; /* NO MORE PURPLE SCROLLBAR! */
+        scrollbar-width: none !important;
+        padding-bottom: 2rem !important;
+      }
+
+      #app > nav.bar > .tools::-webkit-scrollbar {
+        display: none !important;
+      }
+
+      #app > nav.bar > .tools > a {
+        padding: 0.65rem 0.4rem !important;
+        margin: 3px 6px !important;
+        border-radius: 8px !important;
+        font-size: 0.8rem !important;
+        color: #8a90a0 !important;
+        transition: all 0.2s !important;
+      }
+
+      #app > nav.bar > .tools > a:hover {
+        background: rgba(255, 255, 255, 0.06) !important;
+        color: #fff !important;
+      }
+
+      #app > nav.bar > .tools > a.router-link-active {
+        background: rgba(16, 185, 129, 0.15) !important;
+        color: #10b981 !important;
+      }
+
+      /* Clean Web Clutter */
+      .top-menu, 
+      a[href*="patreon"], 
+      .help, 
+      .locales, 
+      .locale-list,
+      a[href*="tuner"] {
+        display: none !important;
+      }
+
+      /* Prominent StagePrompter Item in Sidebar */
+      .desktop-sp-item {
+        background: linear-gradient(135deg, rgba(0, 229, 255, 0.12), rgba(16, 185, 129, 0.12)) !important;
+        border: 1px solid rgba(0, 229, 255, 0.35) !important;
+        border-radius: 10px !important;
+        margin: 6px !important;
+        padding: 8px 4px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-decoration: none !important;
+        transition: all 0.25s !important;
+      }
+
+      .desktop-sp-item:hover {
+        background: linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(16, 185, 129, 0.25)) !important;
+        border-color: #00e5ff !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(0, 229, 255, 0.25) !important;
+      }
+
+      .desktop-sp-item .icon {
+        font-size: 20px;
+        margin-bottom: 2px;
+      }
+
+      .desktop-sp-item .label {
+        font-weight: 800;
+        font-size: 0.78rem;
+        color: #00e5ff !important;
+        letter-spacing: -0.2px;
+      }
+
+      .desktop-sp-item .sub {
+        font-size: 0.62rem;
+        color: #10b981 !important;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      /* Bridge Button in Player Screen */
+      .bridge-btn-sp {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #00b4d8, #0077b6);
+        color: #fff !important;
+        font-weight: 700;
+        font-size: 0.95rem;
+        padding: 12px 22px;
+        border-radius: 10px;
+        text-decoration: none;
+        border: 1px solid rgba(0, 229, 255, 0.4);
+        box-shadow: 0 4px 18px rgba(0, 180, 216, 0.4);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-top: 14px;
+      }
+
+      .bridge-btn-sp:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 24px rgba(0, 180, 216, 0.6);
+        background: linear-gradient(135deg, #00c6eb, #0088cc);
       }
     </style>
     <script type="module" crossorigin src="/assets/index-984f238b.js"></script>
@@ -77,6 +341,34 @@
   </head>
 
   <body>
+    <!-- DESKTOP STUDIO WORKSTATION TOP BAR -->
+    <header id="desktop-studio-bar">
+      <a href="/pt/" class="dsb-brand">
+        <img src="/stageprompter/LOGO_SYMBOL.png" alt="tunemusic" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px;">
+        <div class="dsb-title" style="display: flex; align-items: baseline; gap: 6px;">
+          <span style="font-weight: 900;">
+            <span style="color: #ffffff;">tune</span><span style="background: linear-gradient(135deg, #00f0ff, #d946ef); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">music</span>
+          </span>
+        </div>
+        <span class="dsb-badge" style="color: #ffffff; border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.08);">TELEPROMPTER DE SHOW</span>
+      </a>
+      <nav class="dsb-nav">
+        <a href="/pt/" class="dsb-btn active" title="Isolamento de Voz e Playback com Inteligência Artificial">
+          <span>🎤</span> Separador Vocal & Playback
+        </a>
+        <a href="/pt/stageprompter" class="dsb-btn sp-tab" title="Teleprompter de Palco Profissional">
+          <span>📺</span> tunemusic Studio
+        </a>
+        <a href="/stageprompter/presentation" target="_blank" class="dsb-btn telao-tab" title="Abrir Segunda Tela / HDMI para Telão de Palco">
+          <span>🖥️</span> Abrir Telão (HDMI)
+        </a>
+      </nav>
+      <div class="dsb-status">
+        <span class="dsb-dot"></span>
+        <span>Local Engine Ativa</span>
+      </div>
+    </header>
+
     <div id="app">
       <nav class="bar">
         <div class="tools"><a href="/pt/" class="router-link-active router-link-exact-active" aria-current="page"><svg aria-hidden="true" width="2.5em" height="1.7em" fill="currentColor" stroke="">
@@ -123,7 +415,71 @@
     </div>
 
     <script>
-      // Clean modern browser environment
+      // Desktop Studio Injector: Keep StagePrompter always visible and add 1-click bridge
+      (function() {
+        function injectStagePrompterButton() {
+          const tools = document.querySelector('#app > nav.bar > .tools');
+          if (tools && !document.getElementById('nav-desktop-stageprompter')) {
+            const item = document.createElement('a');
+            item.id = 'nav-desktop-stageprompter';
+            item.href = '/pt/stageprompter';
+            item.className = 'desktop-sp-item';
+            item.title = 'Abrir Teleprompter de Palco (tunemusic)';
+            item.innerHTML = `
+              <div class="icon">📺</div>
+              <div class="label">tunemusic</div>
+              <div class="sub">Teleprompter</div>
+            `;
+            // Insert AT THE VERY TOP of tools!
+            tools.insertBefore(item, tools.firstChild);
+          }
+        }
+
+        function injectPlayerBridge() {
+          const playerEncode = document.querySelector('.player-encode, .page-player');
+          if (playerEncode && !document.getElementById('btn-send-to-stageprompter')) {
+            const btn = document.createElement('a');
+            btn.id = 'btn-send-to-stageprompter';
+            btn.className = 'bridge-btn-sp';
+            btn.href = '#';
+            btn.innerHTML = `<span>📺</span> <span>Enviar Playback para o tunemusic ➔</span>`;
+            btn.onclick = (e) => {
+              e.preventDefault();
+              const audioEls = document.querySelectorAll('audio, source');
+              let stemUrl = '';
+              for (const a of audioEls) {
+                const src = a.src || a.getAttribute('src');
+                if (src && (src.includes('music') || src.includes('instrumental') || src.includes('listen'))) {
+                  stemUrl = src;
+                  break;
+                }
+              }
+              const songName = document.querySelector('.player-title, .title, h1, h2')?.textContent || 'Playback';
+              const target = `/pt/stageprompter${stemUrl ? '?audio_url=' + encodeURIComponent(stemUrl) + '&name=' + encodeURIComponent(songName.trim()) : ''}`;
+              window.location.href = target;
+            };
+            playerEncode.appendChild(btn);
+          }
+        }
+
+        const obs = new MutationObserver(() => {
+          injectStagePrompterButton();
+          injectPlayerBridge();
+          document.querySelectorAll('a[href*="tuner"]').forEach(el => el.remove());
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
+
+        // Keyboard shortcuts for Desktop Studio
+        window.addEventListener('keydown', (e) => {
+          if (e.ctrlKey && e.key === '1') {
+            window.location.href = '/pt/';
+          } else if (e.ctrlKey && e.key === '2') {
+            window.location.href = '/pt/stageprompter';
+          } else if (e.ctrlKey && e.key === '3') {
+            window.open('/stageprompter/presentation', '_blank');
+          }
+        });
+      })();
     </script>
     <script nomodule>
       ! function() {
@@ -144,5 +500,4 @@
       System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))
     </script>
   </body>
-
 </html>

@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <base href="/stageprompter/">
+  <link rel="icon" href="favicon.ico">
+  <title>tunemusic • Telão de Palco & Apresentação</title>
+  <link rel="stylesheet" href="fonts/fonts.css">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --text: #ffffff;
+      --dimmed: rgba(255, 255, 255, 0.3); /* Letra inativa bem mais apagada */
+      --green: #1db954;
+      
+      /* Ajustes Dinâmicos */
+      --lyrics-font-scale: 1.0;
+      --font-family: 'Inter', sans-serif;
+      --text-transform: none;
+      --font-weight: 800;
+
+      /* Área segura do telão: afasta a moldura/conteúdo das beiradas porque
+         muitas TVs cortam ~3-5% da imagem via HDMI (overscan). Aumente se a
+         TV cortar muito; diminua para monitores que mostram a tela inteira. */
+      --telao-inset: 4.5vmin;
+
+      /* Fator de auto-ajuste: reduz a fonte só o necessário para o grupo
+         destacado (ex.: estrofe inteira) caber completo na tela.
+         Calculado pelo presentation.js; 1 = tamanho cheio escolhido. */
+      --fit-scale: 1;
+    }
+
+    /* Nome da cidade no topo do telão (opcional — Ajustes de Exibição).
+       Discreto: maiúsculas, meio translúcido, centralizado, dentro da
+       área segura para a TV não cortar. */
+    .city-banner {
+      position: fixed;
+      top: calc(var(--telao-inset, 4.5vmin) + 1.4vmin);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 900;
+      display: none;
+      font-family: var(--font-family);
+      /* O tamanho é escolhido pelo operador nos Ajustes de Exibição */
+      /* --city-fit: redução automática quando o nome não cabe na largura */
+      font-size: calc(2.6vmin * var(--city-scale, 1) * var(--city-fit, 1));
+      font-weight: 800;
+      letter-spacing: calc(0.6vmin * var(--city-scale, 1) * var(--city-fit, 1));
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.65);
+      text-align: center;
+      max-width: 80vw;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-family);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      width: 100vw;
+    }
+    
+    /* Welcome screen */
+    .welcome-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3vmin;
+    }
+
+    @property --border-angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+
+    .welcome-screen, .lyrics-container, .songtitle-container {
+      box-sizing: border-box;
+      position: relative;
+      border-radius: 24px;
+      /* ÁREA SEGURA: TVs cortam ~3-5% das beiradas via HDMI (overscan) e
+         engoliam a moldura verde. A margem maior afasta a moldura da beirada
+         para ela aparecer mesmo em TVs que cortam a imagem. */
+      margin: var(--telao-inset, 4.5vmin);
+      height: calc(100vh - (2 * var(--telao-inset, 4.5vmin)));
+      width: calc(100vw - (2 * var(--telao-inset, 4.5vmin)));
+      
+      border: 3px solid transparent;
+      background: 
+        linear-gradient(var(--bg), var(--bg)) padding-box,
+        conic-gradient(from var(--border-angle), transparent 0%, transparent 60%, rgba(255, 255, 255, 0.6) 95%, transparent 100%) border-box,
+        linear-gradient(rgba(29, 185, 84, 0.8), rgba(29, 185, 84, 0.8)) border-box;
+      
+      animation: 
+        rotate-border 6s linear infinite,
+        slow-glow 4s infinite alternate ease-in-out;
+    }
+    
+    .lyrics-container {
+      display: none; /* starts hidden */
+      flex-direction: column;
+    }
+    
+    @keyframes rotate-border {
+      to { --border-angle: 360deg; }
+    }
+
+    @keyframes slow-glow {
+      0% { box-shadow: 0 0 10px rgba(29, 185, 84, 0.1); }
+      100% { box-shadow: 0 0 25px rgba(29, 185, 84, 0.5); }
+    }
+    .logo-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 2vmin;
+    }
+    .app-logo {
+      max-width: 65vw;
+      max-height: 55vh;
+      object-fit: contain;
+      animation: float-glow 5s ease-in-out infinite;
+    }
+    @keyframes float-glow {
+      0%, 100% {
+        transform: translateY(0);
+        filter: drop-shadow(0 0 20px rgba(29, 185, 84, 0.2));
+      }
+      50% {
+        transform: translateY(-15px);
+        filter: drop-shadow(0 0 50px rgba(29, 185, 84, 0.7));
+      }
+    }
+    .subtitle {
+      font-size: 3vmin;
+      color: #ffffff;
+      margin: 0;
+      letter-spacing: 2px;
+      font-weight: 700;
+      text-transform: uppercase;
+      text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+    }
+    
+    /* Lyrics Mode */
+
+    .lyrics-area {
+      flex: 1;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      /* Margem de segurança lateral da LETRA: mantém o texto longe da faixa
+         que a TV corta (overscan), junto com a --telao-inset da moldura */
+      padding: 0 7vw;
+      box-sizing: border-box;
+      /* Máscara de desvanecimento cinematográfica */
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+    }
+    .lyrics-area::-webkit-scrollbar {
+      display: none;
+    }
+    /* Modo "Estrofe inteira": a estrofe preenche quase toda a área, então a
+       máscara de desvanecimento encurta para não apagar a 1ª e a última linha */
+    .lyrics-area.fill-estrofe {
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 4%, black 96%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, black 4%, black 96%, transparent 100%);
+    }
+    
+    .spacer-top {
+      height: 40vh;
+      flex-shrink: 0;
+    }
+    .spacer-bottom {
+      height: 50vh;
+      flex-shrink: 0;
+    }
+    
+    .verse-block {
+      width: 100%;
+      max-width: 100%; /* nunca mais largo que a área segura da letra */
+      text-align: center;
+      margin-bottom: 3vh; /* Fluxo mais contínuo */
+      font-size: calc(7vh * var(--lyrics-font-scale) * var(--fit-scale, 1)); /* Levemente menor para caber melhor na máscara */
+      font-family: var(--font-family);
+      text-transform: var(--text-transform);
+      font-weight: var(--font-weight);
+      line-height: 1.25;
+      /* Palavra maior que a linha quebra em vez de ser cortada na beirada */
+      overflow-wrap: break-word;
+      color: rgba(255, 255, 255, 0.25); /* Bem escuro para não chamar atenção */
+      filter: blur(2.5px); /* Efeito cinematográfico de desfoque */
+      transform: scale(0.95); /* Levemente menor */
+      transition: color 0.5s ease, text-shadow 0.5s ease, filter 0.5s ease, transform 0.5s ease;
+      white-space: pre-wrap;
+      letter-spacing: normal;
+      margin-left: auto;
+      margin-right: auto;
+      will-change: transform, filter, color;
+    }
+    .verse-block.new-stanza {
+      margin-top: 4vh; /* Menos separação de estrofe para não quebrar o fluxo */
+    }
+    /* Frases que vêm DEPOIS do destaque: seguem a "Cor das Próximas Frases"
+       (sem cor escolhida, o mesmo cinza apagado das anteriores) */
+    .verse-block.upcoming {
+      color: var(--next-lyrics-color, rgba(255, 255, 255, 0.25));
+    }
+    .verse-block.current {
+      color: var(--lyrics-color, #ffffff);
+      filter: blur(0px); /* Totalmente nítido */
+      transform: scale(1.05); /* Levemente maior */
+    }
+    /* Zoom do modo Estrofe: SÓ a estrofe destacada amplia para preencher a
+       tela — os versos vizinhos (apagados) continuam no tamanho normal */
+    .lyrics-area.fill-estrofe .verse-block.current {
+      font-size: calc(7vh * var(--lyrics-font-scale) * var(--fit-scale, 1) * var(--estrofe-zoom, 1));
+    }
+    
+    .presentation-title {
+      /* Escala PROPRIA, separada da do conteudo. Antes o titulo seguia
+         --msg-scale; quando Participacoes e Avisos passaram a entrar no teto
+         (3x) para o texto ficar grande, o titulo triplicou junto e passou a
+         comer a tela. Agora quem manda nele e o operador. */
+      font-size: calc(5vmin * var(--lyrics-font-scale) * var(--msg-titulo-scale, 1) * var(--msg-fit, 1));
+      font-weight: 800;
+      color: #ffd700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: calc(4vmin * var(--msg-titulo-scale, 1) * var(--msg-fit, 1));
+      text-align: var(--msg-align, center);
+      width: 100%;
+    }
+    .thanks-container, .participations-container, .notices-container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: safe center; /* centraliza; com muitos nomes, rola */
+      /* ÁREA SEGURA: mesmas margens do resto do telão (TVs cortam as beiradas) */
+      margin: var(--telao-inset, 4.5vmin);
+      width: calc(100vw - (2 * var(--telao-inset, 4.5vmin)));
+      height: calc(100vh - (2 * var(--telao-inset, 4.5vmin)));
+      padding: 3vmin 2vw;
+      box-sizing: border-box;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .thanks-container::-webkit-scrollbar,
+    .participations-container::-webkit-scrollbar,
+    .notices-container::-webkit-scrollbar { display: none; }
+
+    /* TAMANHO DOS AGRADECIMENTOS (ajuste na própria tela de Agradecimentos).
+       Vale só para esta tela; Participações e Avisos continuam como estavam.
+       O auto-ajuste (--msg-fit) segue por cima: se a lista não couber, o
+       telão reduz o necessário — o ajuste do operador é o teto, não uma
+       garantia de tamanho. */
+    .thanks-container { --msg-scale: var(--thanks-scale, 1); }
+    /* Participações e Avisos não têm ajuste do operador: entram no teto (3) e
+       o auto-ajuste desce até o bloco caber. O padrão já é o teto para o
+       primeiro quadro não piscar pequeno antes das configurações chegarem. */
+    .participations-container { --msg-scale: var(--participations-scale, 3); }
+    .notices-container { --msg-scale: var(--notices-scale, 3); }
+    /* Texto centralizado: uma coluna única no meio da tela */
+    .credits-grid {
+      display: flex;
+      flex-direction: column;
+      /* Alinhamento escolhido pelo operador. Centro continua o padrao: e o
+         que funciona lido de longe na maioria dos telaos. */
+      align-items: var(--msg-align-flex, center);
+      /* O vão entre seções encolhe/cresce junto com o texto: assim o aumento
+         do operador vira letra maior, e não espaço vazio */
+      gap: calc(4vmin * var(--msg-fit, 1));
+      width: 100%;
+      max-width: 94vw;
+      box-sizing: border-box;
+    }
+    /* Sem cartões: texto puro, com os títulos em destaque */
+    .presentation-credits-section {
+      background: none;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      text-align: var(--msg-align, center);
+      box-sizing: border-box;
+    }
+    .presentation-credits-sec-title {
+      font-weight: 900;
+      color: #00e5ff;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+    .presentation-credits-list {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      flex: 1;
+    }
+    .presentation-credits-item {
+      font-weight: 800;
+      color: var(--text);
+    }
+    /* NADA DE TEXTO CORTADO: no limite (uma palavra gigante sozinha), o
+       telão quebra a palavra em vez de deixar sumir na beirada */
+    .msg-quebrar .presentation-title,
+    .msg-quebrar .presentation-credits-sec-title,
+    .msg-quebrar .presentation-credits-item {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    /* ── Layout Paisagem (Landscape) ──────────────────────────────────────── */
+    @media (orientation: landscape) {
+      .presentation-credits-section {
+        max-width: 80vw;
+      }
+      .verse-block {
+        font-size: calc(7.5vmin * var(--lyrics-font-scale) * var(--fit-scale, 1));
+      }
+      .lyrics-area.fill-estrofe .verse-block.current {
+        font-size: calc(7.5vmin * var(--lyrics-font-scale) * var(--fit-scale, 1) * var(--estrofe-zoom, 1));
+      }
+      .presentation-credits-section {
+        padding: calc(2.5vmin * var(--msg-fit, 1)) 3vw;
+        gap: calc(1.8vmin * var(--msg-fit, 1));
+      }
+      .presentation-credits-sec-title {
+        font-size: calc(2.8vmin * var(--lyrics-font-scale) * var(--msg-scale, 1) * var(--msg-fit, 1));
+        padding-bottom: 0.8vmin;
+      }
+      .presentation-credits-list {
+        gap: calc(1.2vmin * var(--msg-fit, 1));
+      }
+      .presentation-credits-item {
+        font-size: calc(4vmin * var(--lyrics-font-scale) * var(--msg-scale, 1) * var(--msg-fit, 1));
+      }
+    }
+
+    /* ── Layout Retrato (Portrait) ─────────────────────────────────────────── */
+    @media (orientation: portrait) {
+      .presentation-credits-section {
+        width: 100%;
+        max-width: 88vw;
+      }
+      .verse-block {
+        font-size: calc(5.5vmin * var(--lyrics-font-scale) * var(--fit-scale, 1)); /* Menor para evitar quebrar palavras em tela estreita */
+      }
+      .lyrics-area.fill-estrofe .verse-block.current {
+        font-size: calc(5.5vmin * var(--lyrics-font-scale) * var(--fit-scale, 1) * var(--estrofe-zoom, 1));
+      }
+      .presentation-credits-section {
+        padding: calc(2vmin * var(--msg-fit, 1)) 4vw;
+        gap: calc(1.2vmin * var(--msg-fit, 1));
+      }
+      .presentation-credits-sec-title {
+        font-size: calc(2.4vmin * var(--lyrics-font-scale) * var(--msg-scale, 1) * var(--msg-fit, 1));
+        padding-bottom: 0.6vmin; /* Corrigido de vh para vmin */
+      }
+      .presentation-credits-list {
+        gap: calc(0.8vmin * var(--msg-fit, 1));
+      }
+      .presentation-credits-item {
+        font-size: calc(3.2vmin * var(--lyrics-font-scale) * var(--msg-scale, 1) * var(--msg-fit, 1)); /* Reduzido para caber bem na vertical */
+      }
+    }
+
+
+
+    /* ── Footer Letras (Música Atual e Próxima) - Profissional ───────────────────────────── */
+    .lyrics-footer {
+      position: absolute;
+      bottom: 3vmin;
+      left: 4vw;
+      right: 4vw;
+      min-height: 10vmin;
+      background: rgba(15, 15, 15, 0.65);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0;
+      backdrop-filter: blur(20px);
+      /* Três zonas fixas: Em execução | cronômetro | A SEGUIR (destaque) */
+      display: grid;
+      grid-template-columns: 1fr auto 1.6fr;
+      align-items: center;
+      gap: 2vw;
+      padding: 1.2vmin 3vw;
+      z-index: 50;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+    }
+    /* O cronômetro mora AQUI DENTRO durante a letra: o grid reparte o
+       espaço e a sobreposição é impossível por construção */
+    .lf-timer-slot {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-width: 0;
+    }
+    .presentation-stopwatch.in-footer {
+      position: static;
+      transform: none;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      backdrop-filter: none;
+      padding: 0 0.5vmin;
+      /* Acompanha o ajuste de tamanho, com teto para não estourar a barra */
+      font-size: clamp(20px, calc(7vmin * var(--stopwatch-scale, 1)), 16vmin);
+      line-height: 1;
+    }
+    .presentation-stopwatch.in-footer.hidden { display: none; }
+    .lyrics-footer.hidden {
+      display: none;
+    }
+    .lf-next.hidden, .lf-divider.hidden {
+      display: none;
+    }
+    .lf-playing, .lf-next {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.8vmin;
+      min-width: 0;
+    }
+    .lf-next {
+      text-align: right;
+      align-items: flex-end;
+    }
+    /* "Em execução" é secundário: o artista já está vendo a letra dela */
+    .lf-label {
+      text-transform: uppercase;
+      font-size: clamp(9px, 1.3vmin, 18px);
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 4px;
+      font-weight: 900;
+    }
+    .lf-title {
+      font-size: clamp(16px, 3.4vmin, 52px);
+      font-weight: 800;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+      letter-spacing: 0.5px;
+    }
+    /* "A SEGUIR" continua com o rótulo verde de destaque */
+    .lf-next .lf-label {
+      color: rgba(29, 185, 84, 1);
+    }
+
+    /* ── Cronômetro Apresentação ─────────────────────────────────────────── */
+    .presentation-stopwatch {
+      /* Mora na vaga central do rodapé: alinhado a ela, sem sobrepor textos */
+      position: fixed;
+      bottom: calc(var(--telao-inset, 4.5vmin) + 2vmin); /* acima da área que a TV corta */
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 10, 10, 0.85);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      padding: 0.8vmin 2.4vmin;
+      border-radius: 100px;
+      /* Tamanho ajustável nos Ajustes do Cronômetro (--stopwatch-scale).
+         O teto em vmin impede que ele tome a tela inteira. */
+      font-size: clamp(18px, calc(5vmin * var(--stopwatch-scale, 1)), 26vmin);
+      font-weight: 900;
+      color: var(--stopwatch-color, #ffd700); /* Amarelo por padrão, configurável */
+      font-family: var(--font-family);
+      font-variant-numeric: tabular-nums;
+      z-index: 1000;
+      letter-spacing: 1px;
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5vmin;
+      transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    /* Sem ícone: só o tempo, mais limpo e ocupa menos espaço no rodapé */
+    .presentation-stopwatch.hidden {
+      opacity: 0;
+      transform: translateX(-50%) translateY(50px);
+      pointer-events: none;
+    }
+
+    /* ── CRONÔMETRO COM POSIÇÃO PRÓPRIA ──────────────────────────────────
+       O operador arrastou para onde quis, na própria tela de apresentação.
+       Guardado em % da tela, então o mesmo ajuste vale em qualquer TV. */
+    .presentation-stopwatch.sw-livre {
+      left: var(--stopwatch-x, 50%);
+      top: var(--stopwatch-y, 90%);
+      bottom: auto;
+      transform: translate(-50%, -50%);
+    }
+    .presentation-stopwatch.sw-livre.hidden {
+      transform: translate(-50%, -50%) translateY(50px);
+    }
+    /* Enquanto arrasta, nada de transição: o cronômetro tem que colar no
+       cursor, senão parece que está escorregando atrás do mouse */
+    .presentation-stopwatch.sw-arrastando { transition: none; }
+
+    /* RELÓGIO: reaproveita o visual do cronômetro, com posição, tamanho e
+       cor próprios. Vem depois do .sw-livre para as variáveis dele valerem. */
+    .presentation-stopwatch.presentation-clock {
+      left: var(--clock-x, 12%);
+      top: var(--clock-y, 8%);
+      font-size: clamp(18px, calc(5vmin * var(--clock-scale, 1)), 26vmin);
+      color: var(--clock-color, #ffffff);
+    }
+
+    /* MODO DE AJUSTE: só aqui ele pode ser pego. A moldura tracejada existe
+       para o operador saber que está mexendo, e some sozinha ao desligar. */
+    .presentation-stopwatch.sw-ajustando {
+      cursor: move;
+      outline: 2px dashed rgba(0, 229, 255, 0.9);
+      outline-offset: 6px;
+    }
+    /* ALÇAS DE TAMANHO: arrastar a alça para longe do centro aumenta, para
+       perto diminui. É o caminho principal do tamanho — mouse sem rolagem
+       (e trackpad) é o que mais aparece no palco. Ficam fora do modo de
+       ajuste para não existirem durante o show. */
+    .sw-alca {
+      position: absolute;
+      width: 2.2vmin;
+      height: 2.2vmin;
+      min-width: 14px;
+      min-height: 14px;
+      background: #00e5ff;
+      border: 2px solid rgba(0, 0, 0, 0.55);
+      border-radius: 4px;
+      display: none;
+      z-index: 1;
+    }
+    .presentation-stopwatch.sw-ajustando .sw-alca { display: block; }
+    /* Dentro do rodapé ele é `position: static`, e aí as alças se soltariam
+       para outro canto da tela — no modo de ajuste ele vira âncora. */
+    .presentation-stopwatch.in-footer.sw-ajustando { position: relative; }
+    .sw-alca-se { top: -1.1vmin; left: -1.1vmin; cursor: nwse-resize; }
+    .sw-alca-sd { top: -1.1vmin; right: -1.1vmin; cursor: nesw-resize; }
+    .sw-alca-ie { bottom: -1.1vmin; left: -1.1vmin; cursor: nesw-resize; }
+    .sw-alca-id { bottom: -1.1vmin; right: -1.1vmin; cursor: nwse-resize; }
+    .sw-ajuste-aviso {
+      position: fixed;
+      top: 2vmin;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3000;
+      background: rgba(0, 229, 255, 0.14);
+      border: 1px solid rgba(0, 229, 255, 0.55);
+      color: #00e5ff;
+      font-family: var(--font-family);
+      font-size: 1.9vmin;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 1vmin 2.4vmin;
+      border-radius: 100px;
+      pointer-events: none;
+    }
+    .sw-ajuste-aviso.hidden { display: none; }
+
+    /* Músicas "sem letra": layout de bloco — barra com o nome do bloco no
+       topo e a sequência de músicas empilhada, com a atual em destaque */
+    .songtitle-container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 3vmin;
+      text-align: center;
+      padding: 3.5vmin 4vw;
+    }
+    .st-block-bar {
+      flex-shrink: 0;
+      width: 100%;
+      box-sizing: border-box;
+      background: var(--green);
+      color: #000;
+      font-weight: 900;
+      letter-spacing: 0.8vmin;
+      text-transform: uppercase;
+      font-size: 3vmin;
+      text-align: center;
+      padding: 1.6vmin 2vmin;
+      border-radius: 1.2vmin;
+    }
+    .st-list {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      /* "safe center": se a lista for maior que a tela, alinha pelo topo em
+         vez de cortar as pontas — sem isso a música ATUAL (a primeira nos
+         modos bloco/próximas) sumia por cima */
+      justify-content: safe center;
+      /* O espaçamento também encolhe no auto-ajuste (--st-fit): antes só a
+         fonte diminuía e as listas longas não cabiam de jeito nenhum */
+      gap: calc(2.6vmin * var(--st-fit, 1));
+      overflow: hidden;
+    }
+    .st-list .st-item {
+      /* --st-fit: fator de ajuste automático para caber tudo sem cortar */
+      font-size: calc(6.5vmin * var(--lyrics-font-scale) * var(--st-fit, 1));
+      font-weight: var(--font-weight);
+      text-transform: uppercase;
+      letter-spacing: 0.3vmin;
+      color: var(--text);
+      line-height: 1.2;
+      max-width: 92vw;
+      text-align: center;
+      white-space: normal;
+      word-wrap: break-word;
+    }
+    /* A música atual segue a "Cor da Letra" dos Ajustes de Exibição, igual
+       aos versos — sem cor escolhida, fica no amarelo clássico */
+    .st-list .st-item.current { color: var(--lyrics-color, #FFD400); }
+    /* Próximas músicas: "Cor das Próximas Frases" com força total (os
+       títulos já eram brancos cheios, não apagados como os versos) */
+    .st-list .st-item:not(.current):not(.played) { color: var(--next-title-color, var(--text)); }
+    .st-list .st-item.played { color: rgba(255, 255, 255, 0.32); }
+    .st-next {
+      flex-shrink: 0;
+      margin-top: 1vmin;
+      font-size: 2.2vmin;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 0.2vmin;
+    }
+    .st-next.hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Nome da cidade no topo (opcional, controlado pelos Ajustes de Exibição) -->
+  <div id="cityBanner" class="city-banner"></div>
+
+  <!-- Welcome / Idle screen -->
+  <div id="welcomeScreen" class="welcome-screen">
+    <div class="logo-container">
+      <img src="LOGO.png" alt="tunemusic Logo" class="app-logo">
+    </div>
+    <p class="subtitle">tunemusic • Teleprompter de Show</p>
+  </div>
+
+  <!-- Lyrics screen -->
+  <div id="lyricsContainer" class="lyrics-container">
+    <div id="lyricsArea" class="lyrics-area">
+      <div class="spacer-top"></div>
+      <div id="lyricsContent"></div>
+      <div class="spacer-bottom"></div>
+    </div>
+    <div id="lyricsFooter" class="lyrics-footer hidden">
+      <div class="lf-playing">
+        <span class="lf-label">Em Execução</span>
+        <span id="lfTrack" class="lf-title"></span>
+      </div>
+      <div class="lf-timer-slot"></div>
+      <div id="lfNextContainer" class="lf-next hidden">
+        <span class="lf-label">A Seguir</span>
+        <span id="lfNextTrack" class="lf-title"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Música "de cor": só o nome da música no telão -->
+  <div id="songTitleContainer" class="songtitle-container">
+    <div id="stBlockBar" class="st-block-bar"></div>
+    <div id="stList" class="st-list"></div>
+    <div id="stNext" class="st-next hidden"></div>
+  </div>
+
+  <!-- Thanks screen -->
+  <div id="thanksContainer" class="thanks-container">
+    <h2 class="presentation-title" style="color: #00e5ff; text-shadow: 0 0 15px rgba(0,229,255,0.4);">AGRADECIMENTOS</h2>
+    <div id="thanksContent" class="credits-grid"></div>
+  </div>
+
+  <!-- Participations screen -->
+  <div id="participationsContainer" class="participations-container">
+    <h2 class="presentation-title">PARTICIPAÇÕES</h2>
+    <div id="participationsContent" class="credits-grid"></div>
+  </div>
+
+  <!-- Notices screen -->
+  <!-- Sem estilos fixos aqui: a classe .notices-container (CSS) cuida do
+       layout, da área segura e do auto-ajuste, igual às outras telas -->
+  <div id="noticesContainer" class="notices-container">
+    <h2 class="presentation-title">AVISOS</h2>
+    <div id="noticesContent" class="credits-grid"></div>
+  </div>
+
+  <!-- Cronômetro flutuante na tela de exibição.
+       O TEMPO FICA NUM SPAN À PARTE: ele é reescrito a cada segundo, e se o
+       texto fosse direto no container as alças de ajuste seriam apagadas
+       junto, uma vez por segundo. -->
+  <div id="presentationStopwatch" class="presentation-stopwatch hidden">
+    <span id="swTempo">00:00</span>
+    <!-- Alças de redimensionar: só aparecem no modo de ajuste. Existem
+         porque muito operador usa mouse sem rolagem (ou trackpad). -->
+    <span class="sw-alca sw-alca-se" data-alca="1"></span>
+    <span class="sw-alca sw-alca-sd" data-alca="1"></span>
+    <span class="sw-alca sw-alca-ie" data-alca="1"></span>
+    <span class="sw-alca sw-alca-id" data-alca="1"></span>
+  </div>
+  <!-- Relógio (hora local): mesmo visual e mesmo ajuste do cronômetro, mas
+       sempre flutuante (não tem vaga no rodapé) -->
+  <div id="presentationClock" class="presentation-stopwatch presentation-clock sw-livre hidden">
+    <span id="clockTempo">00:00</span>
+    <span class="sw-alca sw-alca-se" data-alca="1"></span>
+    <span class="sw-alca sw-alca-sd" data-alca="1"></span>
+    <span class="sw-alca sw-alca-ie" data-alca="1"></span>
+    <span class="sw-alca sw-alca-id" data-alca="1"></span>
+  </div>
+  <!-- Só aparece no modo de ajuste, e lembra que o público está vendo isto -->
+  <div id="swAjusteAviso" class="sw-ajuste-aviso hidden">
+    Ajustando o cronômetro — arraste o meio para mover, os cantos para o tamanho (o público está vendo)
+  </div>
+
+  <script src="presentation_api.js"></script>
+  <script src="presentation.js"></script>
+</body>
+</html>

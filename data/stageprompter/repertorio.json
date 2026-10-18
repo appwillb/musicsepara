@@ -1,0 +1,23 @@
+{
+  "shows": [
+    {
+      "id": "d082bb7c-7ae5-4166-b853-55f13a035cbc",
+      "nomeDoShow": "teste",
+      "blocos": [
+        {
+          "titulo": "BLOCO 1",
+          "musicas": [
+            {
+              "id": "93a5e554-b722-4ebf-ab8e-6060c774158c",
+              "track": "NA HORA DO ADEUS",
+              "artist": "RECALL 2",
+              "tocada": false,
+              "comLetra": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "activeShowId": "d082bb7c-7ae5-4166-b853-55f13a035cbc"
+}

@@ -1,0 +1,1816 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <base href="/stageprompter/">
+  <link rel="icon" href="favicon.ico">
+  <title>tunemusic • Teleprompter de Show & Áudio Studio</title>
+  <link rel="stylesheet" href="fonts/fonts.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div id="studioAppLayout">
+
+    <!-- MAIN WORKSPACE WITH TOPBAR AND DASHBOARD -->
+    <div id="studioWorkspace">
+      <header id="studioTopBar">
+        <div class="topbar-left">
+          <div class="topbar-brand" onclick="showScreen('homeScreen');" title="Ir para o Painel Central">
+            <img src="LOGO_SYMBOL.png" alt="tunemusic" style="width: 32px; height: 32px; border-radius: 8px; object-fit: contain;">
+            <div class="studio-brand-text">
+              <span class="brand-name" style="font-weight: 900; letter-spacing: -0.5px;">
+                <span style="color: #ffffff;">tune</span><span style="background: linear-gradient(135deg, #00f0ff, #d946ef); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">music</span>
+              </span>
+              <span class="brand-sub">TELEPROMPTER DE SHOW</span>
+            </div>
+          </div>
+
+          <button type="button" id="topbarBackHomeBtn" class="topbar-back-btn" style="display:none;" onclick="showScreen('homeScreen');" title="Voltar ao Painel Central">
+            <span style="font-size: 1rem; font-weight: 800;">←</span>
+            <span>Painel Central</span>
+          </button>
+
+          <div class="topbar-title" id="studioActiveTitle">
+            <span id="studioTitleIcon">🏠</span>
+            <span id="studioTitleText">Painel Central</span>
+          </div>
+          <span class="topbar-category" id="studioCategoryBadge">VISÃO GERAL</span>
+        </div>
+
+        <div class="topbar-right">
+          <button type="button" class="topbar-action-btn btn-topbar-hdmi" onclick="if(window.api && window.api.startPresentation) window.api.startPresentation(); else window.open('/presentation', '_blank');" title="Conectar Telão de Palco via HDMI / Segunda Tela">
+            <span>🖥️</span> <span>Telão HDMI</span>
+          </button>
+          <button type="button" class="topbar-action-btn btn-topbar-fs" onclick="toggleAppFullscreen();" title="Alternar Tela Cheia (F11)">
+            <span>⛶</span> <span>Tela Cheia</span>
+          </button>
+
+          <!-- STATUS DA CONTA TUNEMUSIC (CLIQUE PARA VER CERTIFICADO DA LICENÇA) -->
+          <div id="userBadge" class="account-status-pill hidden" title="Clique para ver Detalhes da Licença tunemusic Pro" onclick="openLicenseDetails();" style="cursor: pointer !important; pointer-events: auto !important;">
+            <div id="userBadgeAvatar" class="asp-avatar">👑</div>
+            <div class="ub-info asp-info">
+              <span id="userBadgeName" class="asp-name">tunemusic Pro</span>
+              <span class="ub-sub asp-sub">
+                <span id="userBadgePlan" class="asp-badge">PRO</span>
+                <span id="userBadgeExp" class="asp-exp">Vitalícia</span>
+              </span>
+            </div>
+            <span class="asp-status-dot" title="Licença Ativa e Autenticada"></span>
+          </div>
+          <div class="topbar-status-pill">
+            <span class="status-pulse-dot" style="width:7px;height:7px;background:#10b981;border-radius:50%;display:inline-block;box-shadow:0 0 8px #10b981;"></span>
+            <span>IA Demucs v4 & Web Audio Online</span>
+          </div>
+          <div class="topbar-clock" id="studioClock">00:00:00</div>
+        </div>
+      </header>
+
+      <!-- CONTEÚDO PRINCIPAL (TELAS) -->
+      <main id="mainContent">
+
+        <!-- TELA 0: EXCLUSIVE MASTER DASHBOARD (HOME) -->
+        <div id="homeScreen" class="screen active">
+          <div class="home-beta-wrap" style="display:none;">
+            <button id="homeFeedbackBtn" class="home-feedback-btn">💬 Suporte</button>
+            <button id="homeNovidadesBtn" class="home-feedback-btn">✨ Novidades</button>
+          </div>
+
+          <div class="dash-wrap">
+            <!-- HERO BANNER WORKSTATION -->
+            <div class="dash-hero">
+              <div class="dash-hero-info">
+                <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+                  <img src="LOGO.png" alt="tunemusic" style="height: 72px; object-fit: contain; filter: drop-shadow(0 4px 18px rgba(0, 240, 255, 0.3));">
+                </div>
+                <p>Ambiente integrado para teleprompter de palco ao vivo, geração de vídeo sincronizado e estúdio de áudio com inteligência artificial.</p>
+              </div>
+              <div class="dash-hero-actions">
+                <button type="button" id="homeStartShowBtn" class="dash-btn-primary" onclick="if(typeof openLiveShowPicker==='function')openLiveShowPicker();else showScreen('liveShowScreen');">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                  <span>Iniciar Show Ao Vivo</span>
+                </button>
+                <button type="button" class="dash-btn-cyan" onclick="openAudioTool('/pt/', 'Separador Vocal & Playback');">
+                  <span>🎤</span>
+                  <span>Novo Playback (IA)</span>
+                </button>
+                <button type="button" id="startPresentationBtn" class="sidebar-footer-btn btn-hdmi" style="padding: 12px 18px; font-size: 0.9rem;" onclick="if(window.api && window.api.startPresentation) window.api.startPresentation(); else window.open('/presentation', '_blank');">
+                  <span>🖥️</span>
+                  <span>Conectar Telão HDMI</span>
+                </button>
+                <div id="presentationError" class="presentation-error hidden"></div>
+              </div>
+            </div>
+
+            <!-- SEÇÃO 1: SUÍTE DE ÁUDIO & IA (8 FERRAMENTAS VOCAL REMOVER) -->
+            <div class="dash-section">
+              <div class="dash-section-head">
+                <h2>
+                  <span>🎧</span>
+                  <span>Suíte de Áudio & IA (Vocal Remover)</span>
+                </h2>
+                <span class="dash-section-badge badge-audio">8 Ferramentas Integradas</span>
+              </div>
+
+              <div class="dash-cards-grid">
+                <!-- Card 1: Separador Vocal -->
+                <div class="dash-card" onclick="openAudioTool('/pt/', 'Separador Vocal & Playback');">
+                  <div class="dash-card-icon" style="color: #00f0ff; background: rgba(0, 240, 255, 0.1);">🎤</div>
+                  <div class="dash-card-title">Separador Vocal (IA)</div>
+                  <div class="dash-card-desc">Isole os vocais e crie playbacks instrumentais com máxima fidelidade acústica Demucs v4.</div>
+                  <span class="dash-card-tag" style="color: #00f0ff;">Motor Demucs v4</span>
+                </div>
+
+                <!-- Card 2: Splitter 4 Stems -->
+                <div class="dash-card" onclick="openAudioTool('/pt/splitter-ai', 'Splitter Multi-Pistas (4 Stems)');">
+                  <div class="dash-card-icon" style="color: #8b5cf6; background: rgba(139, 92, 246, 0.1);">🎚️</div>
+                  <div class="dash-card-title">Splitter 4 Pistas</div>
+                  <div class="dash-card-desc">Separação multi-pistas completa: isola vocal, bateria, baixo e harmonia em canais individuais.</div>
+                  <span class="dash-card-tag" style="color: #8b5cf6;">4 Stems Separados</span>
+                </div>
+
+                <!-- Card 3: Pitch & Speed -->
+                <div class="dash-card" onclick="openAudioTool('/pt/pitch', 'Mudar Tom & Velocidade');">
+                  <div class="dash-card-icon" style="color: #38bdf8; background: rgba(56, 189, 248, 0.1);">🎵</div>
+                  <div class="dash-card-title">Mudar Tom & BPM</div>
+                  <div class="dash-card-desc">Ajuste o tom musical em semitons e a velocidade de reprodução com algoritmo WebAssembly SoundTouch.</div>
+                  <span class="dash-card-tag" style="color: #38bdf8;">WASM SoundTouch</span>
+                </div>
+
+                <!-- Card 4: Key & BPM Finder -->
+                <div class="dash-card" onclick="openAudioTool('/pt/key-bpm-finder', 'Detector de Tom e BPM');">
+                  <div class="dash-card-icon" style="color: #f59e0b; background: rgba(245, 158, 11, 0.1);">⚡</div>
+                  <div class="dash-card-title">Detector Tom e BPM</div>
+                  <div class="dash-card-desc">Análise espectral inteligente de acordes e batimentos por minuto via motor Essentia DSP.</div>
+                  <span class="dash-card-tag" style="color: #f59e0b;">Essentia DSP</span>
+                </div>
+
+                <!-- Card 5: Audio Cutter -->
+                <div class="dash-card" onclick="openAudioTool('/pt/cutter', 'Cortador de Áudio');">
+                  <div class="dash-card-icon" style="color: #ec4899; background: rgba(236, 72, 153, 0.1);">✂️</div>
+                  <div class="dash-card-title">Cortador de Áudio</div>
+                  <div class="dash-card-desc">Edição precisa de faixas, remoção de introduções longas e corte com precisão milimétrica.</div>
+                  <span class="dash-card-tag" style="color: #ec4899;">Waveform Editor</span>
+                </div>
+
+                <!-- Card 6: Audio Joiner -->
+                <div class="dash-card" onclick="openAudioTool('/pt/joiner', 'Juntar Áudios');">
+                  <div class="dash-card-icon" style="color: #10b981; background: rgba(16, 185, 129, 0.1);">🔗</div>
+                  <div class="dash-card-title">Juntar Áudios</div>
+                  <div class="dash-card-desc">Combine múltiplas músicas, medleys e vinhetas em um único arquivo contínuo sem emendas.</div>
+                  <span class="dash-card-tag" style="color: #10b981;">Medley & Join</span>
+                </div>
+
+                <!-- Card 7: Voice Recorder -->
+                <div class="dash-card" onclick="openAudioTool('/pt/voice-recorder', 'Gravador de Voz');">
+                  <div class="dash-card-icon" style="color: #06b6d4; background: rgba(6, 182, 212, 0.1);">🎙️</div>
+                  <div class="dash-card-title">Gravador de Voz</div>
+                  <div class="dash-card-desc">Grave áudios, ensaios e ideias melódicas com redução de ruído integrada e alta definição.</div>
+                  <span class="dash-card-tag" style="color: #06b6d4;">HD Studio Mic</span>
+                </div>
+
+                <!-- Card 8: Karaoke Studio -->
+                <div class="dash-card" onclick="openAudioTool('/pt/karaoke', 'Karaoke Studio');">
+                  <div class="dash-card-icon" style="color: #a855f7; background: rgba(168, 85, 247, 0.1);">🎶</div>
+                  <div class="dash-card-title">Karaoke Studio</div>
+                  <div class="dash-card-desc">Ambiente para ensaio vocal em tempo real com controle dinâmico de volume do cantor e da base.</div>
+                  <span class="dash-card-tag" style="color: #a855f7;">Live Performance</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- SEÇÃO 2: SUÍTE DE PALCO & SHOW AO VIVO (8 MÓDULOS STAGEPROMPTER) -->
+            <div class="dash-section">
+              <div class="dash-section-head">
+                <h2>
+                  <span>📺</span>
+                  <span>Suíte de Palco & Show Ao Vivo (tunemusic)</span>
+                </h2>
+                <span class="dash-section-badge badge-stage">8 Módulos de Palco</span>
+              </div>
+
+              <div class="dash-cards-grid">
+                <!-- Card 1: Teleprompter Ao Vivo -->
+                <div class="dash-card stage-card" onclick="if(typeof openLiveShowPicker==='function')openLiveShowPicker();else showScreen('liveShowScreen');">
+                  <div class="dash-card-icon" style="color: #10b981; background: rgba(16, 185, 129, 0.1);">📺</div>
+                  <div class="dash-card-title">Teleprompter Ao Vivo</div>
+                  <div class="dash-card-desc">Exibição de letras em alta nitidez com rolagem suave, estrofes sincronizadas e controle de palco.</div>
+                  <span class="dash-card-tag" style="color: #10b981;">Modo Palco</span>
+                </div>
+
+                <!-- Card 2: Repertório & Shows -->
+                <div class="dash-card stage-card" onclick="showScreen('repertoireScreen');">
+                  <div class="dash-card-icon" style="color: #3b82f6; background: rgba(59, 130, 246, 0.1);">📋</div>
+                  <div class="dash-card-title">Repertório & Setlists</div>
+                  <div class="dash-card-desc">Monte o setlist do show por blocos temáticos, organize a ordem das músicas e controle o tempo.</div>
+                  <span class="dash-card-tag" style="color: #3b82f6;">Setlist Builder</span>
+                </div>
+
+                <!-- Card 3: Buscar Letras -->
+                <div class="dash-card stage-card" onclick="showScreen('searchScreen');">
+                  <div class="dash-card-icon" style="color: #00f0ff; background: rgba(0, 240, 255, 0.1);">🔍</div>
+                  <div class="dash-card-title">Buscar Letras Online</div>
+                  <div class="dash-card-desc">Pesquisa ultra rápida na nuvem: encontre a letra completa e formatada de qualquer música.</div>
+                  <span class="dash-card-tag" style="color: #00f0ff;">Auto Formatação</span>
+                </div>
+
+                <!-- Card 4: Minhas Músicas -->
+                <div class="dash-card stage-card" id="homeMySongsCard" onclick="showScreen('mySongsScreen');">
+                  <div class="dash-card-icon" style="color: #f59e0b; background: rgba(245, 158, 11, 0.1);">📁</div>
+                  <div class="dash-card-title">Minhas Músicas</div>
+                  <div class="dash-card-desc">Biblioteca local de letras armazenadas no computador, com backup e acesso 100% offline.</div>
+                  <span class="dash-card-tag" style="color: #f59e0b;">Offline Ready</span>
+                </div>
+
+                <!-- Card 5: Telão HDMI -->
+                <div class="dash-card stage-card" onclick="if(window.api && window.api.startPresentation) window.api.startPresentation(); else window.open('/presentation', '_blank');">
+                  <div class="dash-card-icon" style="color: #eab308; background: rgba(234, 179, 8, 0.1);">🖥️</div>
+                  <div class="dash-card-title">Telão HDMI / 2ª Tela</div>
+                  <div class="dash-card-desc">Espelhamento automático em tela cheia para retorno de músicos, TV de palco ou painéis LED.</div>
+                  <span class="dash-card-tag" style="color: #eab308;">Zero Latência</span>
+                </div>
+
+                <!-- Card 6: Gerar Vídeo MP4 -->
+                <div class="dash-card stage-card" id="homeVideoCard" onclick="triggerVideoExport();">
+                  <div class="dash-card-icon" style="color: #ef4444; background: rgba(239, 68, 68, 0.1);">🎬</div>
+                  <div class="dash-card-title">Gerar Vídeo MP4</div>
+                  <div class="dash-card-desc">Renderize o teleprompter em vídeo MP4 sincronizado para rodar em DAWs (Reaper, Pro Tools).</div>
+                  <span class="dash-card-tag" style="color: #ef4444;">Vídeo Sync</span>
+                </div>
+
+                <!-- Card 7: Transcrição IA -->
+                <div class="dash-card stage-card" id="homeTranscribeCard" onclick="triggerAudioTranscription();">
+                  <div class="dash-card-icon" style="color: #8b5cf6; background: rgba(139, 92, 246, 0.1);">🎙️</div>
+                  <div class="dash-card-title">Transcrição IA</div>
+                  <div class="dash-card-desc">Músicas inéditas ou ensaios gravados? A inteligência artificial transcreve e estrutura a letra.</div>
+                  <span class="dash-card-tag" style="color: #8b5cf6;">Voz para Texto</span>
+                </div>
+
+                <!-- Card 8: Mensagens & Patrocinadores -->
+                <div class="dash-card stage-card" onclick="showScreen('messagesScreen');">
+                  <div class="dash-card-icon" style="color: #06b6d4; background: rgba(6, 182, 212, 0.1);">💬</div>
+                  <div class="dash-card-title">Mensagens & Avisos</div>
+                  <div class="dash-card-desc">Exiba agradecimentos, patrocinadores e avisos no telão instantaneamente durante o show.</div>
+                  <span class="dash-card-tag" style="color: #06b6d4;">Transmissão Telão</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+    <!-- TELA 1: BUSCA -->
+    <div id="searchScreen" class="screen">
+      <!-- Botão Voltar no topo -->
+      <div class="top-bar-nav">
+        <button class="nav-back-btn" data-target="homeScreen">
+          <span class="back-arrow">←</span> Voltar
+        </button>
+      </div>
+
+      <div class="search-wrap">
+        <div class="search-box" id="searchBox">
+          <span class="search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
+          <input type="text" id="searchInput" placeholder="O que você quer cantar hoje?" autocomplete="off" spellcheck="false">
+          <button id="clearBtn" class="icon-btn hidden">✕</button>
+        </div>
+
+        <div id="searchQuotaInfo" class="search-quota-info hidden"></div>
+
+        <!-- Dropdown -->
+        <div id="dropdown" class="dropdown hidden">
+          <div id="dropdownList"></div>
+        </div>
+
+        <!-- Histórico -->
+        <div id="recentSection" class="recent hidden">
+          <span class="recent-title">Pesquisas recentes</span>
+          <div id="recentList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TELA MINHAS MÚSICAS: letras salvas no dispositivo -->
+    <div id="mySongsScreen" class="screen">
+      <div class="top-bar-nav">
+        <button class="nav-back-btn" data-target="homeScreen">
+          <span class="back-arrow">←</span> Voltar
+        </button>
+      </div>
+      <div class="search-wrap" style="max-width: 720px; gap: 0;">
+        <div class="mysongs-head">
+          <h2>Minhas Músicas</h2>
+          <span id="mySongsCount" class="mysongs-count"></span>
+          <div style="display:flex;gap:8px;margin-left:auto;">
+            <button id="backupExportBtn" class="rep-add-btn" title="Salva um arquivo com suas músicas, shows e créditos para usar em outro computador"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar backup</button>
+            <button id="backupImportBtn" class="rep-add-btn" title="Traz as músicas, shows e créditos de um backup exportado em outro computador"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Importar backup</button>
+          </div>
+        </div>
+        <div class="search-box mysongs-search">
+          <span class="search-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
+          <input type="text" id="mySongsSearch" placeholder="Pesquisar por música ou artista..." autocomplete="off" spellcheck="false">
+          <button id="mySongsClearBtn" class="icon-btn hidden">✕</button>
+        </div>
+        <div id="mySongsList" class="mysongs-grid"></div>
+      </div>
+    </div>
+    <!-- TELA CRIAR SHOW -->
+    <div id="repertoireScreen" class="screen">
+      <div class="top-bar-nav">
+        <button class="nav-back-btn" id="repBackBtn">
+          <span class="back-arrow">←</span> Voltar
+        </button>
+        <div id="repDetailActions" class="hidden" style="display: flex; gap: 12px;">
+          <button id="repHelpBtn" class="edit-toggle-btn" title="Passo a passo de como montar o show">Ativar Assistente (modo tutorial)</button>
+          <button id="repEditModeBtn" class="edit-toggle-btn" style="display: none;" title="Editar a lista de músicas do show como texto">✎ Editar Lista</button>
+        </div>
+      </div>
+
+      <!-- VISÃO 1: MEUS SHOWS (setlists) -->
+      <div id="showsListView" class="shows-list-view">
+        <div class="shows-header">
+          <div>
+            <h2 class="shows-title">Meus Shows</h2>
+            <span id="showsCount" class="shows-count">Nenhum show criado ainda</span>
+          </div>
+          <button id="addShowBtn" class="save-btn">+ Novo Show</button>
+        </div>
+        <div id="showsGrid" class="shows-grid"></div>
+      </div>
+
+      <!-- VISÃO 2: BLOCOS DO SHOW ABERTO -->
+      <div id="showDetailView" class="hidden show-detail-view">
+        <div class="rep-detail-wrap">
+          <div class="search-box rep-title-box">
+          <input type="text" id="repertoireTitle" placeholder="Nome do Show / Evento (Opcional)" autocomplete="off">
+        </div>
+
+        <!-- View Mode: Shows blocks and songs -->
+        <div id="repViewMode">
+          <div class="rep-add-toolbar">
+            <button id="repAddSearchBtn" class="rep-add-btn" title="Procurar uma música e adicionar ao show"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Adicionar Música</button>
+            <button id="repAddMySongsBtn" class="rep-add-btn" title="Adicionar músicas já salvas no app"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> Minhas Músicas</button>
+            <button id="repAddBlockBtn" class="rep-add-btn" title="Criar um novo bloco no show"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Bloco</button>
+            <span id="repFetchStatus" class="rep-fetch-status hidden"></span>
+          </div>
+          <div class="repertoire-list-container">
+            <div id="repertoireBlocksContainer" class="repertoire-blocks">
+              <!-- Blocks and songs added via JS -->
+            </div>
+          </div>
+          
+          <div class="repertoire-actions">
+            <button id="repPrevBtn" class="save-btn secondary"><span class="back-arrow">←</span> Anterior</button>
+            <span id="repCounter" class="rep-counter">0 / 0</span>
+            <button id="repNextBtn" class="save-btn">Próxima <span class="back-arrow" style="transform: rotate(180deg); display: inline-block;">←</span></button>
+          </div>
+        </div>
+
+        <!-- Edit Mode: Textarea to paste -->
+        <div id="repEditMode" class="hidden rep-edit-mode">
+          <p class="rep-edit-hint">Digite <strong>uma música por linha</strong>, separando o nome da música e o cantor com um traço (ex.: <strong>Evidências - Chitãozinho e Xororó</strong>).<br>Cada cartão é um bloco do show. Para criar a próxima parte, clique em <strong>+ Bloco</strong>.</p>
+          <div id="repBlocksEditor" class="rep-blocks-editor"></div>
+          <div class="rep-edit-actions">
+            <button id="repAddEditorBlockBtn" class="rep-add-btn" style="margin-right: auto;">+ Bloco</button>
+            <span id="repPasteSummary" class="rep-paste-summary"></span>
+            <button id="repCancelEditBtn" class="cancel-btn">Cancelar</button>
+            <button id="repProcessBtn" class="save-btn">Salvar Lista</button>
+          </div>
+        </div>
+
+      </div>
+      </div><!-- /showDetailView -->
+    </div>
+
+    <!-- TELA: INICIAR SHOW (painel de controle ao vivo) -->
+    <div id="liveShowScreen" class="screen">
+      <div class="top-bar-nav live-top-bar">
+        <button class="nav-back-btn" id="liveBackBtn">
+          <span class="back-arrow">←</span> Voltar
+        </button>
+        <div id="liveHeaderInfo" class="live-header-info hidden">
+          <span id="liveTimer" class="live-timer" title="Tempo de show">00:00</span>
+          <span id="liveProgress" class="live-progress" title="Músicas tocadas">0 / 0</span>
+          <button id="liveResetBtn" class="edit-toggle-btn" title="Zerar cronômetro e desmarcar músicas tocadas">↺ Zerar Show</button>
+        </div>
+      </div>
+
+      <!-- Passo 1: escolher o show -->
+      <div id="livePickerView" class="live-picker">
+        <div class="shows-header">
+          <h2>Iniciar Show</h2>
+          <span id="livePickerCount" class="shows-count">Escolha o show que vai apresentar</span>
+        </div>
+        <div id="livePickerGrid" class="shows-grid"></div>
+      </div>
+
+      <!-- Passo 2: painel de controle -->
+      <div id="liveControlView" class="live-control hidden">
+        <div class="live-show-title" id="liveShowTitle"></div>
+        <div id="liveBlocks" class="live-blocks"></div>
+        <div class="live-msg-bar">
+          <span class="live-msg-label">Mensagens:</span>
+          <button class="live-msg-btn" data-livemsg="thanks">🙏 Agradecimentos</button>
+          <button class="live-msg-btn" data-livemsg="participations">🎤 Participações</button>
+          <button class="live-msg-btn" data-livemsg="notices">📢 Avisos</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TELA 2: LETRA -->
+    <div id="lyricsScreen" class="screen">
+      <!-- Header fixo com título + botão voltar -->
+      <div class="lyrics-header">
+        <button id="backBtn" class="nav-back-btn">
+          <span class="back-arrow">←</span>
+        </button>
+        <div class="lyrics-meta" style="flex: 1; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+            <span id="trackTitle" class="track-title" title="Clique no lápis para editar o título"></span>
+            <input id="trackTitleInput" class="track-title-input hidden" type="text" autocomplete="off" spellcheck="false">
+            <button id="editTrackTitleBtn" class="edit-title-btn" title="Editar título da música">✎</button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; min-width: 0; margin-top: 2px;">
+            <span id="artistName" class="artist-name" title="Clique no lápis para editar o artista"></span>
+            <input id="artistNameInput" class="artist-name-input hidden" type="text" autocomplete="off" spellcheck="false">
+            <button id="editArtistNameBtn" class="edit-title-btn" title="Editar artista da música">✎</button>
+          </div>
+        </div>
+        
+        <div class="lyrics-rep-controls" id="lyricsRepControls" style="display: none; gap: 8px;">
+          <button id="lyricsPrevBtn" class="skip-btn" title="Música anterior"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg></button>
+          <button id="lyricsNextBtn" class="skip-btn primary" title="Próxima música"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg></button>
+        </div>
+      </div>
+
+      <!-- Corpo em 3 colunas: músicas do show à esquerda, letra no meio,
+           controles + prévia do TP à direita -->
+      <div class="lyrics-body">
+        <aside id="lyricsSidebar" class="lyrics-sidebar hidden"></aside>
+        <div id="lyricsSidebarResizer" class="lyrics-sidebar-resizer" title="Arraste para ajustar a largura da lista"></div>
+        <div class="lyrics-main">
+          <!-- Área de Rolagem da Letra -->
+          <div id="lyricsArea" class="lyrics-area">
+            <!-- Os blocos de estrofe serão inseridos aqui -->
+          </div>
+          <textarea id="lyricsEditArea" class="lyrics-edit-textarea hidden"></textarea>
+          <!-- ESPELHO DO TP: com uma mensagem NO AR, é ELA que ocupa a área
+               central do operador — não a letra de uma música que o público
+               nem está vendo. Mesma página do telão, então o que o operador
+               olha é exatamente o que está lá fora. -->
+          <div id="msgOperatorView" class="msg-operator-view hidden">
+            <iframe id="msgOperatorFrame" title="Mensagem no telão" src="presentation.html" scrolling="no"></iframe>
+          </div>
+        </div>
+        <div id="railResizer" class="lyrics-sidebar-resizer" title="Arraste para ajustar a largura da coluna de controles"></div>
+        <aside id="lyricsRightRail" class="lyrics-right-rail">
+          <div class="rail-buttons">
+            <button id="lyricsSaveBtn" class="edit-toggle-btn confirm" style="display: none;">Salvar</button>
+            <button id="lyricsCancelBtn" class="edit-toggle-btn muted" style="display: none;">Cancelar</button>
+            <button id="lyricsRefetchBtn" class="edit-toggle-btn" style="display: none;" title="Ignora a letra salva e busca de novo na internet">Buscar Letra de Novo</button>
+            <button id="lyricsEditBtn" class="edit-toggle-btn">Editar Letra ✎</button>
+            <button id="lyricsNoLyricsBtn" class="edit-toggle-btn" style="display: none;" title="O TP passa a mostrar só o nome desta música, sem a letra">🎤 Apresentar Sem Letra</button>
+            <button id="lyricsTodasSemLetraBtn" class="edit-toggle-btn" style="display: none;" title="O show inteiro passa para 'Apresentar Sem Letra': o TP mostra os títulos em toda música, sem marcar uma por uma">🎤 Todas Sem Letra</button>
+            <button id="stopwatchToggleBtn" class="edit-toggle-btn" title="Mostrar/ocultar cronômetro"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Cronômetro</button>
+            <button id="lyricsSettingsBtn" class="edit-toggle-btn" title="Fonte, tamanho e cor da letra no TP">Ajustes de Exibição</button>
+            <!-- Ver o problema no show e ir arrumar sem caçar o caminho -->
+            <button id="lyricsEditRepBtn" class="edit-toggle-btn" title="Abrir a lista do show para incluir, tirar ou reordenar músicas">☰ Editar Repertório</button>
+          </div>
+          <!-- CIDADE NO TP: clique no nome liga/desliga, lápis edita -->
+          <div class="rail-city">
+            <div class="rail-preview-label" style="margin-bottom: 0;">CIDADE NO TP</div>
+            <div class="rail-city-row">
+              <button id="cityToggleBtn" class="edit-toggle-btn rail-city-btn"></button>
+              <button id="cityEditBtn" class="edit-title-btn" title="Editar o nome da cidade">✎</button>
+            </div>
+            <input id="cityNameInline" class="city-name-input hidden" type="text" maxlength="40" placeholder="Nome da cidade (ex.: Goiânia - GO)" autocomplete="off" spellcheck="false">
+          </div>
+          <!-- MENSAGENS: atalhos para as telas de agradecimentos/participações/avisos -->
+          <div class="rail-messages">
+            <div class="rail-preview-label" style="margin-bottom: 0;">MENSAGENS</div>
+            <button id="railMsgThanks" class="edit-toggle-btn">Agradecimentos</button>
+            <button id="railMsgParticipations" class="edit-toggle-btn">Participações</button>
+            <button id="railMsgNotices" class="edit-toggle-btn">Avisos</button>
+          </div>
+          <div class="rail-preview">
+            <div class="rail-preview-label">PRÉVIA DO TP</div>
+            <div id="railPreviewBody" class="rail-preview-body">
+              <iframe id="telaoPreviewFrame" title="Prévia do TP" src="presentation.html"></iframe>
+            </div>
+            <!-- Aviso quando a segunda tela não está conectada (clique conecta) -->
+            <button id="previewNoScreenWarn" class="preview-no-screen hidden" title="A prévia funciona, mas o público não está vendo nada. Clique para conectar a segunda tela.">⚠ Segunda tela não conectada — clique para conectar</button>
+          </div>
+          <!-- CRONÔMETRO: agora mora na coluna da direita (mesmos IDs de antes) -->
+          <div id="stopwatchFooter" class="rail-stopwatch hidden">
+            <div class="rail-sw-header">
+              <span class="rail-preview-label" style="margin-bottom: 0;">CRONÔMETRO</span>
+              <button id="swHideBtn" class="sw-action-btn" title="Ocultar o cronômetro">✕</button>
+            </div>
+            <span id="stopwatchTime" class="stopwatch-digits">00:00</span>
+            <div class="rail-sw-actions">
+              <button id="swPlayPause" class="sw-action-btn play-pause-btn sw-labeled" title="Iniciar ou pausar o cronômetro">▶ Iniciar</button>
+              <button id="swReset" class="sw-action-btn reset-btn sw-labeled" title="Voltar o cronômetro para o início">⟲ Zerar</button>
+            </div>
+            <button id="globalSettingsBtn" class="global-settings-btn" title="Modo, tempo de show e cor do cronômetro">⚙ Ajustes Cronômetro</button>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- TELA: MENSAGENS (Agradecimentos + Participações + Avisos em abas) -->
+    <div id="messagesScreen" class="screen">
+      <div class="top-bar-nav">
+        <button class="nav-back-btn" data-target="homeScreen">
+          <span class="back-arrow">←</span> Voltar
+        </button>
+      </div>
+
+      <div class="msg-tabs">
+        <button class="msg-tab active" data-msgtab="thanks">Agradecimentos</button>
+        <button class="msg-tab" data-msgtab="participations">Participações</button>
+        <button class="msg-tab" data-msgtab="notices">Avisos</button>
+      </div>
+
+      <!-- Aba: Agradecimentos -->
+      <div id="msgPanelThanks" class="msg-tab-panel text-screen-content">
+        <div class="msg-panel-header">
+          <h2 style="color: #00e5ff;">Agradecimentos</h2>
+          <button class="edit-toggle-btn msg-air-btn" id="airThanksBtn">▶ Colocar no TP</button>
+          <button class="edit-toggle-btn" id="editThanksBtn">Editar ✎</button>
+          <div class="thanks-size-control"
+               title="Tamanho do texto dos Agradecimentos no telão. O que não couber numa tela vai para a próxima página.">
+            <label for="thanksSize">Tamanho no TP</label>
+            <input type="range" id="thanksSize" min="0.5" max="3" step="0.05" value="1.0">
+            <span id="thanksSizeVal">20</span>
+          </div>
+          <div class="thanks-size-control"
+               title="Tamanho do título grande no telão (AGRADECIMENTOS, PARTICIPAÇÕES, AVISOS). Vale para as três telas.">
+            <label>Tamanho do título</label>
+            <input type="range" class="msg-titulo-size" min="0.4" max="2.5" step="0.05" value="1.0">
+            <span class="msg-titulo-size-val">20</span>
+          </div>
+          <div class="msg-align-control" title="Alinhamento do texto no telão. Vale para as três telas de mensagem.">
+            <label>Alinhar</label>
+            <button type="button" class="msg-align-btn" data-align="esquerda" title="À esquerda">☰</button>
+            <button type="button" class="msg-align-btn" data-align="centro" title="Centralizado">☲</button>
+            <button type="button" class="msg-align-btn" data-align="direita" title="À direita">☰</button>
+          </div>
+        </div>
+        <div class="credits-card" id="creditsCard">
+          <!-- Preenchido dinamicamente pelo renderer.js -->
+        </div>
+
+        <form class="credits-edit-form hidden" id="thanksEditForm">
+          <div class="form-group">
+            <label>Agradecimentos</label>
+            <div class="form-dica">Escreva livremente. <strong>Deixe uma linha em branco</strong> para separar o que aparece em telas diferentes. Se quiser títulos como PREFEITURA ou PATROCINADORES, escreva e pinte com a cor que quiser.</div>
+            <div id="editAgradecimentos" class="credits-edit-area" contenteditable="true"
+                 spellcheck="false" title="Linha em branco separa uma tela da outra."></div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="save-btn">Salvar</button>
+            <button type="button" class="cancel-btn" id="cancelThanksBtn">Cancelar</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Aba: Participações -->
+      <div id="msgPanelParticipations" class="msg-tab-panel text-screen-content hidden">
+        <div class="msg-panel-header">
+          <h2>Participações</h2>
+          <button class="edit-toggle-btn msg-air-btn" id="airParticipationsBtn">▶ Colocar no TP</button>
+          <button class="edit-toggle-btn" id="editCreditsBtn">Editar ✎</button>
+          <div class="thanks-size-control"
+               title="Tamanho do texto de Participações no telão. O que não couber numa tela vai para a próxima página.">
+            <label for="participationsSize">Tamanho no TP</label>
+            <input type="range" id="participationsSize" min="0.5" max="6" step="0.05" value="3.0">
+            <span id="participationsSizeVal">100</span>
+          </div>
+          <div class="thanks-size-control"
+               title="Tamanho do título grande no telão (AGRADECIMENTOS, PARTICIPAÇÕES, AVISOS). Vale para as três telas.">
+            <label>Tamanho do título</label>
+            <input type="range" class="msg-titulo-size" min="0.4" max="2.5" step="0.05" value="1.0">
+            <span class="msg-titulo-size-val">20</span>
+          </div>
+          <div class="msg-align-control" title="Alinhamento do texto no telão. Vale para as três telas de mensagem.">
+            <label>Alinhar</label>
+            <button type="button" class="msg-align-btn" data-align="esquerda" title="À esquerda">☰</button>
+            <button type="button" class="msg-align-btn" data-align="centro" title="Centralizado">☲</button>
+            <button type="button" class="msg-align-btn" data-align="direita" title="À direita">☰</button>
+          </div>
+        </div>
+        <div class="credits-card" id="participationsCard">
+          <!-- Preenchido dinamicamente pelo renderer.js -->
+        </div>
+
+        <form class="credits-edit-form hidden" id="creditsEditForm">
+          <div class="form-group">
+            <label>Outros Artistas / Participações</label>
+            <div class="form-dica">Um artista por linha. <strong>Deixe uma linha em branco</strong> para separar o que aparece em telas diferentes — igual às estrofes da letra.</div>
+            <div id="editParticipacoes" class="credits-edit-area" contenteditable="true"
+                 spellcheck="false" title="Linha em branco separa uma tela da outra."></div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="save-btn">Salvar</button>
+            <button type="button" class="cancel-btn" id="cancelCreditsBtn">Cancelar</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Aba: Avisos -->
+      <div id="msgPanelNotices" class="msg-tab-panel text-screen-content hidden">
+        <div class="msg-panel-header">
+          <h2 id="noticesPanelTitle">Avisos</h2>
+          <button class="edit-toggle-btn msg-air-btn" id="airNoticesBtn">▶ Colocar no TP</button>
+          <button class="edit-toggle-btn" id="editNoticesBtn">Editar ✎</button>
+          <div class="thanks-size-control"
+               title="Tamanho do texto de Avisos no telão. O que não couber numa tela vai para a próxima página.">
+            <label for="noticesSize">Tamanho no TP</label>
+            <input type="range" id="noticesSize" min="0.5" max="6" step="0.05" value="3.0">
+            <span id="noticesSizeVal">100</span>
+          </div>
+          <div class="thanks-size-control"
+               title="Tamanho do título grande no telão (AGRADECIMENTOS, PARTICIPAÇÕES, AVISOS). Vale para as três telas.">
+            <label>Tamanho do título</label>
+            <input type="range" class="msg-titulo-size" min="0.4" max="2.5" step="0.05" value="1.0">
+            <span class="msg-titulo-size-val">20</span>
+          </div>
+          <div class="msg-align-control" title="Alinhamento do texto no telão. Vale para as três telas de mensagem.">
+            <label>Alinhar</label>
+            <button type="button" class="msg-align-btn" data-align="esquerda" title="À esquerda">☰</button>
+            <button type="button" class="msg-align-btn" data-align="centro" title="Centralizado">☲</button>
+            <button type="button" class="msg-align-btn" data-align="direita" title="À direita">☰</button>
+          </div>
+        </div>
+        <div class="credits-card" id="noticesCard">
+          <!-- Preenchido dinamicamente pelo renderer.js -->
+        </div>
+
+        <form class="credits-edit-form hidden" id="noticesEditForm">
+          <div class="form-group">
+            <label>Título no telão <span class="label-opcional">(opcional)</span></label>
+            <input type="text" class="credits-title-edit" id="tituloAvisos" value="Avisos" maxlength="30"
+                   placeholder="Deixe vazio para não mostrar título"
+                   title="É o título grande que aparece no telão nesta tela. Em branco, o telão mostra só os avisos — e eles ficam maiores."
+                   spellcheck="false">
+          </div>
+          <div class="form-group">
+            <label>Avisos / Comunicados</label>
+            <div class="form-dica">Um aviso por linha. <strong>Deixe uma linha em branco</strong> para separar o que aparece em telas diferentes — igual às estrofes da letra.</div>
+            <div id="editAvisos" class="credits-edit-area" contenteditable="true"
+                 spellcheck="false" title="Linha em branco separa uma tela da outra."></div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="save-btn">Salvar</button>
+            <button type="button" class="cancel-btn" id="cancelNoticesBtn">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TELA 8: SEPARADOR VOCAL & PLAYBACK (STUDIO WORKSTATION) -->
+    <div id="vocalRemoverScreen" class="screen">
+      <div class="top-bar-nav" style="justify-content: space-between; align-items: center;">
+        <button class="nav-back-btn" data-target="homeScreen">
+          <span class="back-arrow">←</span> Voltar ao Início
+        </button>
+        <div class="vr-screen-badge">
+          <span class="vr-badge-dot"></span>
+          <span>IA Demucs v4 • Multi-Track Studio Mixer</span>
+        </div>
+      </div>
+
+      <div class="vr-workspace-scroll">
+        <div class="vr-workspace-container">
+          
+          <!-- HEADER -->
+          <div class="vr-hero-header">
+            <h1 class="vr-title">Separador Vocal & Isolamento Instrumental</h1>
+            <p class="vr-subtitle">Isole vozes e crie playbacks perfeitos com Inteligência Artificial Demucs v4 e envie direto para o teleprompter de palco</p>
+          </div>
+
+          <!-- PAINEL 1: UPLOAD / DROPZONE -->
+          <div id="vrUploadSection" class="vr-panel">
+            <div id="vrDropzone" class="vr-dropzone">
+              <input type="file" id="vrFileInput" accept="audio/*,.mp3,.wav,.flac,.m4a,.ogg,.aac,.wma" style="display: none;">
+              <div class="vr-drop-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <h2 class="vr-drop-title">Arraste e solte o arquivo de áudio aqui</h2>
+              <p class="vr-drop-hint">MP3, WAV, FLAC, M4A, OGG, AAC, WMA • Sem limite de tamanho</p>
+              <button type="button" id="vrSelectFileBtn" class="vr-btn-primary">
+                📁 Selecionar Arquivo do PC
+              </button>
+            </div>
+
+            <!-- OPÇÕES DO MODELO DEMUCS -->
+            <div class="vr-options-row">
+              <div class="vr-option-group">
+                <span class="vr-opt-label">Modo de Separação:</span>
+                <div class="vr-model-selector">
+                  <button type="button" class="vr-model-btn active" data-model="1">
+                    <span class="vr-btn-indicator">●</span>
+                    <span>2 Faixas (Voz + Playback / Instrumental)</span>
+                  </button>
+                  <button type="button" class="vr-model-btn" data-model="2">
+                    <span class="vr-btn-indicator">○</span>
+                    <span>4 Faixas (Voz + Baixo + Bateria + Outros)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- LISTA DE FAIXAS PROCESSADAS RECENTEMENTE -->
+            <div class="vr-recent-section">
+              <div class="vr-recent-header">
+                <h3>🎵 Áudios e Playbacks Já Processados</h3>
+                <span id="vrRecentCount" class="vr-recent-count">0 faixas</span>
+              </div>
+              <div id="vrRecentList" class="vr-recent-list">
+                <div class="vr-recent-loading">Carregando faixas locais...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PAINEL 2: PROGRESSO DO PROCESSAMENTO IA -->
+          <div id="vrProgressSection" class="vr-panel hidden">
+            <div class="vr-progress-card">
+              <div class="vr-spinner-wrap">
+                <div class="vr-spinner"></div>
+              </div>
+              <h2 id="vrProgressTitle" class="vr-progress-title">Separando Áudio com Inteligência Artificial...</h2>
+              <p id="vrProgressFilename" class="vr-progress-file">musica.mp3</p>
+              
+              <div class="vr-progress-bar-wrap">
+                <div id="vrProgressBar" class="vr-progress-bar" style="width: 15%;"></div>
+              </div>
+              <div class="vr-progress-stats">
+                <span id="vrProgressStatusText">Carregando modelo Demucs v4...</span>
+                <span id="vrProgressPercent">15%</span>
+              </div>
+
+              <p class="vr-progress-tip">💡 Dica: O processamento usa IA de ponta para entregar a melhor fidelidade acústica.</p>
+              <div style="margin-top: 24px; text-align: center;">
+                <button type="button" id="vrCancelProgressBtn" class="vr-btn-secondary" style="border-radius: 50px; padding: 10px 24px; cursor: pointer; font-weight: 700;">
+                  ✕ Cancelar / Nova Música
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- PAINEL 3: MULTI-TRACK AUDIO MIXER & WAVEFORM STUDIO -->
+          <div id="vrMixerSection" class="vr-panel hidden">
+            
+            <!-- TOP BAR DO MIXER COM METADADOS E AÇÃO RÁPIDA -->
+            <div class="vr-mixer-topbar">
+              <div class="vr-track-meta">
+                <h2 id="vrMixerTitle" class="vr-mixer-song-name">Nome da Música</h2>
+                <div class="vr-meta-tags">
+                  <span class="vr-tag" id="vrTagDuration">⏱️ --:--</span>
+                  <span class="vr-tag tag-bpm" id="vrTagBpm">⚡ 120 BPM</span>
+                  <span class="vr-tag tag-key" id="vrTagKey">🎼 Tom: C</span>
+                  <span class="vr-tag tag-model" id="vrTagModel">🎛️ IA Demucs v4</span>
+                </div>
+              </div>
+
+              <div class="vr-mixer-top-actions">
+                <!-- BOTÃO MAGISTRAL: ENVIAR PARA O STAGEPROMPTER -->
+                <button type="button" id="vrOpenInStagePrompterBtn" class="vr-btn-stageprompter">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="6 3 20 12 6 21 6 3"/>
+                  </svg>
+                  <span>Abrir este Playback no tunemusic ➔</span>
+                </button>
+                <button type="button" id="vrNewAudioBtn" class="vr-btn-secondary">
+                  + Processar Outro
+                </button>
+              </div>
+            </div>
+
+            <!-- MASTER TRANSPORT CONTROLS -->
+            <div class="vr-transport-bar">
+              <div class="vr-transport-controls">
+                <button type="button" id="vrBtnRewind" class="vr-trans-btn" title="Voltar ao início">⏮</button>
+                <button type="button" id="vrBtnPlayPause" class="vr-trans-btn vr-play-btn" title="Reproduzir / Pausar (Barra de Espaço)">▶</button>
+                <button type="button" id="vrBtnStop" class="vr-trans-btn" title="Parar">⏹</button>
+                <button type="button" id="vrBtnLoop" class="vr-trans-btn" title="Repetir em loop">🔁</button>
+              </div>
+
+              <div class="vr-time-display">
+                <span id="vrCurrentTime">00:00</span>
+                <span class="vr-time-sep">/</span>
+                <span id="vrTotalTime">00:00</span>
+              </div>
+
+              <div class="vr-master-volume-wrap">
+                <span class="vr-vol-icon">🔊 Master:</span>
+                <input type="range" id="vrMasterVolume" min="0" max="100" value="85" class="vr-vol-slider">
+                <span id="vrMasterVolVal" class="vr-vol-val">85%</span>
+              </div>
+            </div>
+
+            <!-- RACK DE FAIXAS MULTI-TRACK -->
+            <div class="vr-tracks-rack">
+              
+              <!-- TRACK 1: MÚSICA / PLAYBACK -->
+              <div class="vr-stem-track stem-playback">
+                <div class="vr-stem-channel">
+                  <div class="vr-stem-badge badge-playback">
+                    <span class="stem-dot"></span>
+                    <span>MÚSICA / PLAYBACK</span>
+                  </div>
+                  <div class="vr-channel-controls">
+                    <div class="vr-btn-group">
+                      <button type="button" id="vrBtnMuteMusic" class="vr-ch-btn ch-mute" title="Mutar Instrumental">M</button>
+                      <button type="button" id="vrBtnSoloMusic" class="vr-ch-btn ch-solo" title="Solo Instrumental">S</button>
+                    </div>
+                    <div class="vr-fader-wrap">
+                      <label for="vrVolMusic">Volume</label>
+                      <input type="range" id="vrVolMusic" min="0" max="120" value="100" class="vr-fader">
+                      <span id="vrVolMusicVal" class="vr-fader-val">100%</span>
+                    </div>
+                  </div>
+                  <div class="vr-stem-downloads">
+                    <a id="vrDlMusicMp3" href="#" download class="vr-dl-btn" title="Baixar Playback em MP3 320kbps">⬇ MP3</a>
+                    <a id="vrDlMusicWav" href="#" download class="vr-dl-btn" title="Baixar Playback em WAV Original">⬇ WAV</a>
+                  </div>
+                </div>
+                <div class="vr-waveform-wrapper">
+                  <canvas id="vrCanvasMusic" class="vr-waveform-canvas"></canvas>
+                  <div id="vrPlayheadMusic" class="vr-playhead"></div>
+                </div>
+              </div>
+
+              <!-- TRACK 2: VOZ / VOCAIS ISOLADOS -->
+              <div class="vr-stem-track stem-vocals">
+                <div class="vr-stem-channel">
+                  <div class="vr-stem-badge badge-vocals">
+                    <span class="stem-dot"></span>
+                    <span>VOZ / VOCAIS ISOLADOS</span>
+                  </div>
+                  <div class="vr-channel-controls">
+                    <div class="vr-btn-group">
+                      <button type="button" id="vrBtnMuteVocal" class="vr-ch-btn ch-mute" title="Mutar Voz">M</button>
+                      <button type="button" id="vrBtnSoloVocal" class="vr-ch-btn ch-solo" title="Solo Voz">S</button>
+                    </div>
+                    <div class="vr-fader-wrap">
+                      <label for="vrVolVocal">Volume</label>
+                      <input type="range" id="vrVolVocal" min="0" max="120" value="100" class="vr-fader">
+                      <span id="vrVolVocalVal" class="vr-fader-val">100%</span>
+                    </div>
+                  </div>
+                  <div class="vr-stem-downloads">
+                    <a id="vrDlVocalMp3" href="#" download class="vr-dl-btn" title="Baixar Vocais em MP3 320kbps">⬇ MP3</a>
+                    <a id="vrDlVocalWav" href="#" download class="vr-dl-btn" title="Baixar Vocais em WAV Original">⬇ WAV</a>
+                  </div>
+                </div>
+                <div class="vr-waveform-wrapper">
+                  <canvas id="vrCanvasVocal" class="vr-waveform-canvas"></canvas>
+                  <div id="vrPlayheadVocal" class="vr-playhead"></div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    </div><!-- /#vocalRemoverScreen -->
+
+    <!-- TELA 9: SUÍTE DE ÁUDIO EMBARCADA (8 FERRAMENTAS VOCAL REMOVER) -->
+    <div id="audioSuiteScreen" class="screen">
+      <iframe id="vocalToolsIframe" src="/pt/" title="Ferramentas de Áudio e IA"></iframe>
+    </div>
+
+  </main>
+  </div><!-- /#studioWorkspace -->
+  </div><!-- /#studioAppLayout -->
+
+  <!-- POPUP DE CONFIGURAÇÕES DA APRESENTAÇÃO -->
+  <div id="settingsPopup" class="settings-popup hidden">
+    <div class="settings-popup-header">
+      <h3 id="settingsPopupTitle">Ajustes de Exibição</h3>
+      <button id="closeSettingsBtn" class="close-popup-btn">✕</button>
+    </div>
+    <div class="settings-popup-body">
+      <div class="setting-row">
+        <label for="settingFontSize">Tamanho da Letra</label>
+        <div class="slider-wrap">
+          <input type="range" id="settingFontSize" min="0.5" max="2.0" step="0.05" value="1.0">
+          <span id="settingFontSizeVal">100%</span>
+        </div>
+      </div>
+      <div class="setting-row sw-setting">
+        <label for="settingStopwatchSize" title="Tamanho do cronômetro no telão (0 a 100)">Tamanho do Cronômetro</label>
+        <div class="slider-wrap">
+          <input type="range" id="settingStopwatchSize" min="0.5" max="3" step="0.05" value="1.0">
+          <span id="settingStopwatchSizeVal">20</span>
+        </div>
+      </div>
+      <!-- POSIÇÃO: o operador arrasta na PRÓPRIA tela de apresentação, que é
+           onde dá para ver o resultado no tamanho real. Fica atrás de um
+           botão porque, para arrastar, o mouse vai para a tela do público -->
+      <div class="setting-row sw-setting">
+        <label>Posição do Cronômetro e Relógio</label>
+        <div class="sw-pos-acoes">
+          <button type="button" id="swAjustarBtn" class="edit-toggle-btn"
+                  title="Liga o ajuste na tela de apresentação: arraste o cronômetro (e o relógio) para onde quiser e puxe os cantos para mudar o tamanho">▶ Ajustar no telão</button>
+          <button type="button" id="swPosResetBtn" class="edit-toggle-btn"
+                  title="Devolve o cronômetro e o relógio ao lugar padrão">↩ Voltar ao padrão</button>
+        </div>
+        <div class="sw-pos-dica">No telão, arraste o cronômetro ou o relógio para mover e puxe os cantos para mudar o tamanho. Só funciona com o ajuste ligado.</div>
+      </div>
+      <div class="setting-row sw-setting">
+        <label>Cor do Cronômetro</label>
+        <div class="color-swatches" id="swColorSwatches">
+          <button class="color-swatch" data-color="#FFD700" style="background:#FFD700" title="Amarelo"></button>
+          <button class="color-swatch" data-color="#FFFFFF" style="background:#FFFFFF" title="Branco"></button>
+          <button class="color-swatch" data-color="#1DB954" style="background:#1DB954" title="Verde"></button>
+          <button class="color-swatch" data-color="#4FC3F7" style="background:#4FC3F7" title="Azul"></button>
+          <button class="color-swatch" data-color="#FF8A3D" style="background:#FF8A3D" title="Laranja"></button>
+          <button class="color-swatch" data-color="#FF5CA8" style="background:#FF5CA8" title="Rosa"></button>
+        </div>
+      </div>
+      <!-- RELÓGIO: hora local do computador, independente do cronômetro.
+           Arrasta pelo mesmo "Ajustar no telão" -->
+      <div class="setting-row sw-setting" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
+        <label class="check-container" title="Mostra a hora atual (do computador) no telão">
+          <input type="checkbox" id="settingClockEnabled">
+          <span class="checkmark"></span>
+          Mostrar relógio (hora local) no telão
+        </label>
+      </div>
+      <div class="setting-row sw-setting clock-setting">
+        <label for="settingClockSize" title="Tamanho do relógio no telão (0 a 100)">Tamanho do Relógio</label>
+        <div class="slider-wrap">
+          <input type="range" id="settingClockSize" min="0.5" max="3" step="0.05" value="1.0">
+          <span id="settingClockSizeVal">20</span>
+        </div>
+      </div>
+      <div class="setting-row sw-setting clock-setting">
+        <label>Cor do Relógio</label>
+        <div class="color-swatches" id="clockColorSwatches">
+          <button class="color-swatch" data-color="#FFFFFF" style="background:#FFFFFF" title="Branco"></button>
+          <button class="color-swatch" data-color="#FFD700" style="background:#FFD700" title="Amarelo"></button>
+          <button class="color-swatch" data-color="#1DB954" style="background:#1DB954" title="Verde"></button>
+          <button class="color-swatch" data-color="#4FC3F7" style="background:#4FC3F7" title="Azul"></button>
+          <button class="color-swatch" data-color="#FF8A3D" style="background:#FF8A3D" title="Laranja"></button>
+          <button class="color-swatch" data-color="#FF5CA8" style="background:#FF5CA8" title="Rosa"></button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <label for="settingFontFamily">Estilo da Fonte</label>
+        <select id="settingFontFamily">
+          <option value="'Inter', sans-serif">Inter (Moderna)</option>
+          <option value="'Outfit', sans-serif">Outfit (Arredondada)</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label for="settingVersesHighlight">Frases em Destaque</label>
+        <select id="settingVersesHighlight">
+          <option value="1">Uma por vez</option>
+          <option value="2">Duas por vez</option>
+          <option value="3">Três por vez</option>
+          <option value="estrofe">Estrofe inteira</option>
+        </select>
+      </div>
+      <div class="setting-row" style="flex-direction: column; align-items: stretch; gap: 6px;">
+        <label for="settingTelaoTitulos" title="Vale para as músicas marcadas com 'Apresentar Sem Letra'">Títulos no TP</label>
+        <select id="settingTelaoTitulos">
+          <option value="atual">Só a música atual</option>
+          <option value="bloco">O bloco inteiro (da atual ao fim do bloco)</option>
+          <option value="todas">Todas as músicas do show</option>
+          <option value="proximas">Personalizável (a atual + próximas)</option>
+        </select>
+        <div class="setting-subrow" id="telaoTitulosQtdRow" style="display: none;">
+          <label for="settingTelaoTitulosQtd">Quantos títulos na tela</label>
+          <input type="number" id="settingTelaoTitulosQtd" min="2" max="20" value="6">
+        </div>
+        <div class="setting-hint" id="telaoTitulosHint"></div>
+        <label class="check-container" title="Desmarque para o TP mostrar só os nomes, sem o 1., 2., 3. na frente">
+          <input type="checkbox" id="settingNumerarTitulos" checked>
+          <span class="checkmark"></span>
+          Numerar as músicas no TP
+        </label>
+      </div>
+      <div class="setting-row">
+        <label for="settingCitySize" title="Tamanho do nome da cidade exibido no topo do TP">Tamanho do Nome da Cidade</label>
+        <div class="slider-wrap">
+          <input type="range" id="settingCitySize" min="0.5" max="3" step="0.05" value="1.0">
+          <span id="settingCitySizeVal">20</span>
+        </div>
+      </div>
+      <div class="setting-row">
+        <label>Cor da Frase em Destaque</label>
+        <div class="color-swatches" id="lyricsColorSwatches">
+          <button class="color-swatch" data-color="#FFFFFF" style="background:#FFFFFF" title="Branco"></button>
+          <button class="color-swatch" data-color="#FFD400" style="background:#FFD400" title="Amarelo"></button>
+          <button class="color-swatch" data-color="#1DB954" style="background:#1DB954" title="Verde"></button>
+          <button class="color-swatch" data-color="#4FC3F7" style="background:#4FC3F7" title="Azul"></button>
+          <button class="color-swatch" data-color="#FF8A3D" style="background:#FF8A3D" title="Laranja"></button>
+          <button class="color-swatch" data-color="#FF5CA8" style="background:#FF5CA8" title="Rosa"></button>
+        </div>
+      </div>
+      <!-- As frases que VÊM DEPOIS do destaque. "Padrão" é o cinza apagado de
+           sempre; com cor escolhida elas continuam mais fracas que o destaque -->
+      <div class="setting-row">
+        <label title="Cor das frases que vêm depois da frase em destaque">Cor das Próximas Frases</label>
+        <div class="color-swatches" id="nextLyricsColorSwatches">
+          <button class="color-swatch" data-color="" style="background:#555" title="Padrão (cinza apagado)"></button>
+          <button class="color-swatch" data-color="#FFFFFF" style="background:#FFFFFF" title="Branco"></button>
+          <button class="color-swatch" data-color="#FFD400" style="background:#FFD400" title="Amarelo"></button>
+          <button class="color-swatch" data-color="#1DB954" style="background:#1DB954" title="Verde"></button>
+          <button class="color-swatch" data-color="#4FC3F7" style="background:#4FC3F7" title="Azul"></button>
+          <button class="color-swatch" data-color="#FF8A3D" style="background:#FF8A3D" title="Laranja"></button>
+          <button class="color-swatch" data-color="#FF5CA8" style="background:#FF5CA8" title="Rosa"></button>
+        </div>
+      </div>
+      <div class="setting-row checks-row">
+        <label class="check-container">
+          <input type="checkbox" id="settingAllCaps">
+          <span class="checkmark"></span>
+          FORÇAR CAIXA ALTA
+        </label>
+      </div>
+      <div class="setting-row checks-row">
+        <label class="check-container" title="Por padrão o TP mostra só o nome das músicas. Marque para incluir o artista">
+          <input type="checkbox" id="settingHideArtist">
+          <span class="checkmark"></span>
+          Exibir o nome do artista
+        </label>
+      </div>
+      <div class="setting-row sw-setting" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
+        <label for="settingStopwatchMode">Modo do Cronômetro</label>
+        <select id="settingStopwatchMode">
+          <option value="progress">Progressivo</option>
+          <option value="regress">Regressivo</option>
+        </select>
+      </div>
+      <div class="setting-row sw-setting" id="regressSettingsRow" style="display: none;">
+        <label>Tempo de show</label>
+        <div class="sw-hm-wrap">
+          <input type="number" id="settingShowHours" min="0" max="12" value="1">
+          <span>h</span>
+          <input type="number" id="settingShowMinutes" min="0" max="59" value="0">
+          <span>min</span>
+        </div>
+      </div>
+      <!-- API do Vagalume fora do ar (503) em 07/2026; campo oculto até voltarem. A integração no main.js ativa sozinha se uma chave for salva. -->
+      <div class="setting-row" style="display: none; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; flex-direction: column; align-items: stretch; gap: 8px;">
+        <label>Busca de Letras</label>
+        <span style="font-size: 0.8rem; color: var(--muted); line-height: 1.4;">Chave da API do Vagalume (opcional): melhora a taxa de acerto das buscas. Crie grátis em vagalume.com.br/api</span>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="settingVagalumeKey" placeholder="Cole sua chave aqui" autocomplete="off" spellcheck="false" style="flex: 1; background: #1a1a1a; border: 1px solid #333; color: var(--text); padding: 8px 10px; border-radius: 6px; outline: none; font-size: 0.85rem;">
+          <button id="saveVagalumeKeyBtn" class="save-btn sm">Salvar</button>
+        </div>
+      </div>
+      <div class="setting-row extras-setting" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; flex-direction: column; align-items: stretch; gap: 8px;">
+        <label>Licença</label>
+        <span id="licenseStatus" style="font-size: 0.85rem; color: var(--muted);">Versão gratuita</span>
+        <button id="activateLicenseBtn" class="save-btn full">Ativar Pro</button>
+      </div>
+      <div class="setting-row extras-setting" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
+        <button id="reportProblemBtn" class="save-btn secondary full">Reportar problema</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAINEL DE GERAÇÃO DE VÍDEO SINCRONIZADO -->
+  <div id="videoSyncOverlay" class="video-sync-overlay hidden">
+    <div class="video-sync-panel">
+      <div class="vs-header">
+        <div class="vs-header-info">
+          <h3>Gerar Vídeo Sincronizado</h3>
+          <span id="vsSongLabel" class="vs-song-label"></span>
+        </div>
+        <button id="vsHelpBtn" class="edit-toggle-btn" title="Passo a passo interativo de como gerar o vídeo">Ativar Assistente (modo tutorial)</button>
+        <button id="vsCloseBtn" class="close-popup-btn" title="Fechar">✕</button>
+      </div>
+
+      <!-- 1 · PREPARAR -->
+      <div class="vs-bloco" id="vsBloco1">
+        <div class="vs-bloco-titulo"><span class="vs-num">1</span> Preparar</div>
+        <div class="vs-audio-row">
+          <button id="vsChooseAudioBtn" class="save-btn secondary">Escolher Áudio</button>
+          <span id="vsAudioName" class="vs-audio-name">Nenhum áudio selecionado</span>
+          <button id="vsSaveMarksBtn" class="save-btn secondary sm" title="Salva as marcações num arquivo, onde você escolher (backup)">Salvar Marcações</button>
+          <button id="vsImportMarksBtn" class="save-btn secondary sm" title="Carrega marcações de um arquivo salvo anteriormente">Importar</button>
+        </div>
+      </div>
+
+      <!-- 2 · MARCAR -->
+      <div class="vs-bloco vs-bloco-marcar" id="vsBloco2">
+        <div class="vs-bloco-titulo">
+          <span class="vs-num">2</span> Marcar no ritmo
+        </div>
+
+      <div class="vs-main">
+        <!-- Repertório completo, em janelas por bloco -->
+        <div id="vsRepertoire" class="vs-repertoire"></div>
+
+        <!-- Música selecionada: controles + letra -->
+        <div class="vs-right">
+          <div class="vs-song-nav">
+            <button id="vsPrevSongBtn" class="sw-action-btn" title="Música anterior (só navega, não marca)">←</button>
+            <div class="vs-song-current">
+              <span id="vsSongPos" class="vs-song-pos">0/0</span>
+              <span id="vsSongName" class="vs-song-name">—</span>
+            </div>
+            <button id="vsNextSongBtn" class="sw-action-btn" title="Próxima música (só navega, não marca)">→</button>
+            <button id="vsStartSongBtn" class="save-btn vs-mini-btn">Iniciar Música</button>
+            <button id="vsIdleBtn" class="save-btn vs-mini-btn secondary">Intervalo</button>
+          </div>
+
+          <div id="vsStatus" class="vs-status">Na tela agora: Logo (intervalo)</div>
+
+          <!-- Versos à esquerda · preview à direita -->
+          <div class="vs-work-row">
+            <div id="vsVerses" class="vs-verses"></div>
+
+            <div class="vs-preview-wrap">
+              <div id="vsPreview" class="vs-preview">
+                <div id="vsPreviewWelcome" class="vs-preview-welcome">
+                  <img src="LOGO.png" alt="Logo">
+                </div>
+                <div id="vsPreviewLyrics" class="vs-preview-lyrics hidden">
+                  <div id="vsPreviewVerses" class="vs-preview-verses"></div>
+                  <div id="vsPreviewFooter" class="vs-preview-footer"></div>
+                </div>
+              </div>
+              <div class="vs-preview-label">Preview da tela do palco</div>
+              <div class="vs-font-row" title="O mesmo tamanho usado no vídeo exportado e no TP">
+                <span>Tamanho da letra</span>
+                <input type="range" id="vsFontSize" min="0.5" max="2.0" step="0.05" value="1.0">
+                <span id="vsFontSizeVal">33</span>
+              </div>
+              <div class="vs-font-row" style="margin-top: 8px;" title="Escolha se quer marcar 1 verso por vez, 2 versos ou a estrofe inteira">
+                <span>Frases por tela</span>
+                <select id="vsVersesHighlightSelect" style="background: #10141f; color: #00f0ff; border: 1px solid rgba(0,240,255,0.3); border-radius: 6px; padding: 4px 8px; font-size: 0.82rem; font-weight: 700; cursor: pointer; outline: none;">
+                  <option value="1">1 por vez (frase única)</option>
+                  <option value="2">2 por vez (duas frases)</option>
+                  <option value="3">3 por vez</option>
+                  <option value="estrofe">Estrofe inteira</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+        <div class="vs-player-row">
+          <button id="vsPlayBtn" class="sw-action-btn play-pause-btn" disabled title="Tocar / Pausar">▶</button>
+          <span id="vsTime" class="vs-time">00:00 / 00:00</span>
+          <input type="range" id="vsSeek" class="vs-seek" min="0" max="1000" value="0" disabled>
+          <button id="vsRestartBtn" class="sw-action-btn reset-btn" disabled title="Recomeçar (apaga as marcações)">⟲</button>
+        </div>
+
+        <!-- Forma de onda do show: clique para navegar; marcações aparecem sobre a onda -->
+        <div class="vs-wave-wrap">
+          <canvas id="vsWave" class="vs-wave"></canvas>
+          <div id="vsWaveMsg" class="vs-wave-msg">Escolha o áudio do show para ver a forma de onda</div>
+          <div class="vs-wave-zoom" title="Zoom na forma de onda (ou use a roda do mouse sobre ela)">
+            <button id="vsZoomOut">−</button>
+            <button id="vsZoomIn">+</button>
+            <button id="vsZoomReset">Tudo</button>
+          </div>
+        </div>
+        <div class="vs-wave-legenda">
+          <span><i class="lg-faixa-musica"></i> Música na tela (nome escrito no trecho)</span>
+          <span><i class="lg-faixa-logo"></i> Logo na tela (intervalo)</span>
+          <span><i class="lg-verso"></i> Virada de verso</span>
+          <span><i class="lg-agora"></i> Posição atual</span>
+          <span class="lg-atalhos"><b>ESPAÇO</b> ou <b>→</b> marca e avança · <b>←</b> volta um verso · <b>P</b> pausa/toca</span>
+        </div>
+      </div><!-- /vsBloco2 -->
+
+      <div class="vs-footer" id="vsBloco3">
+        <div class="vs-bloco-titulo"><span class="vs-num">3</span> Exportar</div>
+        <span id="vsMarkerCount" class="vs-marker-count">0 marcações</span>
+        <div class="vs-sync-wrap" title="Ajusta o tempo de TODAS as marcações no vídeo final, de uma vez.&#10;&#10;Letra chegando ADIANTADA no vídeo? Aumente o valor (ex.: +1,0 atrasa a letra em 1 segundo).&#10;Letra chegando ATRASADA? Use valor negativo.&#10;&#10;O ajuste fica salvo com as marcações desta gravação.">
+          <label for="vsSyncOffset">Sincronia fina</label>
+          <input type="number" id="vsSyncOffset" step="0.1" min="-5" max="5" value="0">
+          <span class="vs-sync-unit">s</span>
+          <button id="vsCheckSyncBtn" class="save-btn secondary vs-mini-btn" disabled title="Toca o áudio e o preview segue as marcações sozinho, já com a Sincronia fina aplicada — o que você vê é o que sai no vídeo, sem precisar exportar.&#10;&#10;Dica: clique num ponto da forma de onda para conferir a partir dali.&#10;ESPAÇO (ou o próprio botão) encerra a conferência.">▶ Conferir</button>
+        </div>
+        <button id="vsExportBtn" class="save-btn" disabled>Exportar Vídeo MP4 (1080p)</button>
+      </div>
+      <div id="vsProgress" class="vs-progress hidden">
+        <div class="vs-progress-track"><div id="vsProgressBar" class="vs-progress-bar"></div></div>
+        <span id="vsProgressLabel" class="vs-progress-label">Preparando...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAINEL DE TRANSCRIÇÃO DE ÁUDIO (MÚSICAS INÉDITAS) -->
+  <div id="transcribeOverlay" class="video-sync-overlay hidden">
+    <div class="transcribe-panel">
+      <div class="vs-header">
+        <div class="vs-header-info">
+          <h3>Transcrever Música Inédita</h3>
+          <span class="vs-song-label">Gere a letra a partir do arquivo de áudio da música</span>
+        </div>
+        <button id="trCloseBtn" class="close-popup-btn" title="Fechar">✕</button>
+      </div>
+
+      <div id="trForm" class="tr-form">
+        <p class="tr-intro">Envie o áudio da música inédita. O tunemusic escuta a gravação e monta a letra automaticamente para você revisar.</p>
+
+        <div class="tr-field-row" style="display: none;">
+          <input type="text" id="trTrackInput" class="tr-input" placeholder="Nome da música (pode preencher depois)" autocomplete="off" spellcheck="false">
+          <input type="text" id="trArtistInput" class="tr-input" placeholder="Artista / Cantor (pode preencher depois)" autocomplete="off" spellcheck="false">
+        </div>
+
+        <div id="trChooseAudioBtn" class="tr-drop-zone" tabindex="0" role="button">
+          <span id="trDropTitle" class="tr-drop-main">Clique para escolher o arquivo de áudio</span>
+          <span id="trAudioName" class="tr-drop-sub">MP3, WAV, M4A, FLAC e outros formatos</span>
+        </div>
+
+        <button id="trStartBtn" class="save-btn tr-start-btn">Transcrever Áudio</button>
+
+        <p class="tr-ia-aviso">A transcrição usa inteligência artificial e pode conter erros. Revise a letra antes de salvar.</p>
+
+        <div id="trProgress" class="vs-progress hidden">
+          <div class="vs-progress-track"><div id="trProgressBar" class="vs-progress-bar"></div></div>
+          <span id="trProgressLabel" class="vs-progress-label">Preparando...</span>
+        </div>
+        <div id="trError" class="tr-error hidden"></div>
+      </div>
+
+      <div id="trResult" class="tr-result hidden">
+        <p class="tr-key-hint">Preencha o nome da música e o artista, revise a letra (a transcrição pode conter erros) e clique em <b>Salvar Letra</b>. Separe as estrofes com uma linha em branco.</p>
+        <div class="tr-field-row" style="margin-bottom: 10px;">
+          <input type="text" id="trResultTrackInput" class="tr-input" placeholder="Nome da música *" autocomplete="off" spellcheck="false">
+          <input type="text" id="trResultArtistInput" class="tr-input" placeholder="Artista / Cantor *" autocomplete="off" spellcheck="false">
+        </div>
+        <audio id="trResultAudio" controls preload="metadata" style="width: 100%; height: 36px; margin-bottom: 10px;"></audio>
+        <textarea id="trResultArea" class="tr-result-area" spellcheck="false"></textarea>
+        <div class="tr-result-actions">
+          <button id="trBackBtn" class="cancel-btn">← Voltar</button>
+          <button id="trSaveBtn" class="save-btn">Salvar Letra</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading" class="loading hidden">
+    <div class="loader"></div>
+  </div>
+
+  <!-- TELA DE BOAS-VINDAS (onboarding) -->
+  <!-- NOVIDADES DA VERSÃO — aparece UMA vez depois de atualizar, e só na tela
+       inicial (nunca por cima de um show). O conteúdo vem do renderer.js,
+       junto com o número da versão a que ele se refere. -->
+  <div id="novidadesOverlay" class="novidades-overlay hidden">
+    <div class="novidades-box">
+      <div class="novidades-header">
+        <div>
+          <h2>O que mudou nesta versão</h2>
+          <p id="novidadesSub" class="novidades-sub"></p>
+        </div>
+        <button id="novidadesFecharX" class="close-popup-btn" title="Fechar">✕</button>
+      </div>
+      <div id="novidadesLista" class="novidades-lista"></div>
+      <div class="novidades-footer">
+        <button id="novidadesOk" class="edit-toggle-btn confirm">Entendi</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="welcomeOverlay" class="welcome-overlay hidden">
+    <div class="welcome-split">
+
+      <div class="welcome-left">
+        <img src="LOGO.png" alt="tunemusic" class="welcome-logo">
+        <h1 class="welcome-title">Feito para quem vive<br><span class="accent">a correria do backstage.</span></h1>
+        <p class="welcome-pitch">Repertório pronto, show no controle e nenhuma letra esquecida no palco.</p>
+        <div class="welcome-feats">
+          <span><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg> Teleprompter automático: exporte o show em vídeo e solte no Pro Tools ou Reaper</span>
+          <span><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Não digite letra nenhuma: o app busca a letra de cada música do seu show</span>
+          <span><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Cronômetro na tela para controlar o tempo do show</span>
+          <span><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg> Música inédita? Escolha o arquivo de áudio e a letra sai pronta para o teleprompter</span>
+        </div>
+      </div>
+
+      <div class="welcome-card">
+        <div id="wcSaudacao" class="welcome-saudacao hidden"></div>
+        <!-- Modo VISITANTE / ativação (quando não é Pro) -->
+        <div id="wcFormPro">
+          <label class="welcome-label" for="wcChave">Já tem sua chave Pro?</label>
+          <input id="wcChave" class="welcome-input" type="text" placeholder="Cole aqui a chave que você recebeu" autocomplete="off" spellcheck="false">
+          <div id="wcErro" class="welcome-erro hidden"></div>
+          <button id="wcAtivar" class="welcome-btn-pro">Ativar o Pro</button>
+          <div class="welcome-divider"><span>ou</span></div>
+          <button id="wcVisitante" class="welcome-btn-guest">Quero experimentar grátis primeiro</button>
+        </div>
+        <!-- Cadastro do acesso gratuito (captação de leads) -->
+        <div id="wcCadastro" class="hidden">
+          <label class="welcome-label" for="wcNome">Seu nome</label>
+          <input id="wcNome" class="welcome-input" type="text" placeholder="Como podemos te chamar?" autocomplete="off" spellcheck="false">
+          <label class="welcome-label" for="wcZap">Seu WhatsApp (com DDD)</label>
+          <input id="wcZap" class="welcome-input" type="text" placeholder="(62) 90000-0000" autocomplete="off" spellcheck="false">
+          <div id="wcCadErro" class="welcome-erro hidden"></div>
+          <button id="wcComecar" class="welcome-btn-pro">Começar a usar grátis</button>
+          <p class="welcome-lgpd">Usamos seus dados apenas para contato e novidades do tunemusic.</p>
+          <button id="wcVoltarCad" class="wc-voltar">← Voltar</button>
+        </div>
+        <!-- Modo JÁ PRO (saudação personalizada) -->
+        <button id="wcEntrar" class="welcome-btn-pro hidden">Entrar no tunemusic →</button>
+        <a href="#" id="wcWhatsapp" class="welcome-suporte">💬 Precisa de ajuda? Fale com o suporte no WhatsApp</a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- POPUP DE BUSCA RÁPIDA: pedido do público no meio do show -->
+  <div id="songSearchPopup" class="settings-popup hidden">
+    <div class="settings-popup-header">
+      <h3>Buscar Música Nova</h3>
+      <button id="closeSongSearchBtn" class="close-popup-btn">✕</button>
+    </div>
+    <div class="song-search-box">
+      <input type="text" id="songSearchInput" placeholder="Nome da música ou artista..." autocomplete="off" spellcheck="false">
+    </div>
+    <div id="songSearchResults" class="song-search-results"></div>
+  </div>
+
+  <!-- POPUP DE MENSAGENS: enquanto aberto, o TP mostra a aba escolhida
+       (agradecimentos/participações/avisos) sem sair da tela do show -->
+  <div id="msgPopup" class="settings-popup msg-popup hidden">
+    <div class="settings-popup-header">
+      <h3>Mensagens no TP</h3>
+      <!-- Deixa claro se o público já está vendo isto ou não -->
+      <span id="msgPopupStatus" class="msg-air-status">PRÉVIA</span>
+      <button id="closeMsgPopupBtn" class="close-popup-btn">✕</button>
+    </div>
+    <div class="msg-popup-tabs">
+      <button class="msg-pop-tab" data-tab="thanks">Agradecimentos</button>
+      <button class="msg-pop-tab" data-tab="participations">Participações</button>
+      <button class="msg-pop-tab" data-tab="notices">Avisos</button>
+    </div>
+    <!-- Tamanho dos Agradecimentos no TP: dá para ajustar durante o show,
+         sem sair da tela. É o mesmo ajuste da tela de Mensagens. -->
+    <div id="msgPopupSizeRow" class="msg-popup-size hidden"
+         title="Tamanho do texto desta mensagem no telão. O que não couber numa tela vai para a próxima página.">
+      <label for="msgThanksSize">Tamanho no TP</label>
+      <input type="range" id="msgThanksSize" min="0.5" max="6" step="0.05" value="1.0">
+      <span id="msgThanksSizeVal">20</span>
+    </div>
+    <!-- Passar as páginas dos Agradecimentos: o que não cabe numa tela vai
+         para a próxima, e quem controla é o operador (setas ← → também) -->
+    <div id="msgPopupPager" class="msg-popup-pager hidden">
+      <button id="msgPagerPrev" class="msg-pager-btn" title="Página anterior (seta ←)">◀</button>
+      <span id="msgPagerLabel">1 / 1</span>
+      <button id="msgPagerNext" class="msg-pager-btn" title="Próxima página (seta →)">▶</button>
+    </div>
+    <div id="msgPopupBody" class="msg-popup-body"></div>
+    <!-- NADA VAI AO TP SOZINHO: abrir a mensagem é só preparação. O telao
+         continua na letra até o operador clicar em "Colocar no TP". -->
+    <div class="msg-popup-footer">
+      <button id="msgPopupAirBtn" class="edit-toggle-btn msg-air-btn">▶ Colocar no TP</button>
+      <button id="msgPopupEditBtn" class="edit-toggle-btn">Editar conteúdo ✎</button>
+      <button id="msgPopupSaveBtn" class="edit-toggle-btn confirm" style="display: none;">Salvar</button>
+      <button id="msgPopupCancelBtn" class="edit-toggle-btn muted" style="display: none;">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- MODAL DE ATIVAÇÃO DE LICENÇA (BLOQUEIO 1 PC / ANTI-PIRATARIA) -->
+  <div id="licenseActivationModal" class="license-modal-overlay hidden">
+    <div class="license-modal-card">
+      <div class="lic-modal-header">
+        <div class="lic-brand-wrap">
+          <img src="LOGO.png" alt="tunemusic Pro" class="lic-brand-logo">
+          <span class="lic-badge-pro">PRO WORKSTATION</span>
+        </div>
+        <h2 class="lic-modal-title">Ativação Obrigatória de Licença</h2>
+        <p class="lic-modal-desc">
+          Este software é protegido por tecnologia anti-pirataria e bloqueio criptográfico por hardware (1 PC).
+          Para liberar seu acesso total, informe o <strong>ID do Computador</strong> abaixo ao administrador para receber sua chave.
+        </p>
+      </div>
+
+      <div class="lic-modal-body">
+        <!-- SEÇÃO DO ID DO COMPUTADOR -->
+        <div class="lic-hwid-box">
+          <div class="lic-hwid-label">
+            <span>🖥️ ID DO SEU COMPUTADOR (HWID)</span>
+            <span class="lic-hwid-sub">Envie este código para receber sua chave</span>
+          </div>
+          <div class="lic-hwid-display-row">
+            <input type="text" id="licMachineIdInput" class="lic-hwid-input" readonly value="Carregando ID...">
+            <button type="button" id="licCopyHwidBtn" class="lic-btn-copy" onclick="copyMachineHwid();" title="Copiar ID para a Área de Transferência">
+              <span id="licCopyIcon">📋</span>
+              <span id="licCopyText">Copiar ID</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- SEÇÃO DA CHAVE DE ATIVAÇÃO -->
+        <div class="lic-key-box">
+          <label for="licKeyInput" class="lic-key-label">🔑 CHAVE DE ATIVAÇÃO (TM-...)</label>
+          <textarea id="licKeyInput" class="lic-key-textarea" placeholder="Cole aqui a chave de ativação fornecida (começa com TM-...)" rows="3" spellcheck="false"></textarea>
+          <div id="licFeedbackMsg" class="lic-feedback-msg hidden"></div>
+        </div>
+
+        <!-- BOTÃO DE ATIVAÇÃO -->
+        <div class="lic-actions">
+          <button type="button" id="licActivateBtn" class="lic-btn-activate" onclick="submitLicenseActivation();">
+            <span id="licActSpinner" class="lic-spinner hidden"></span>
+            <span id="licActBtnText">🚀 Ativar tunemusic Pro Agora</span>
+          </button>
+        </div>
+
+        <div class="lic-footer-note">
+          <span>🔒 Criptografia HMAC-SHA256 • Bloqueio Permanente por Placa-Mãe e Processador</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE DETALHES DA LICENÇA (VISUALIZAÇÃO / AUDITORIA) -->
+  <div id="licenseDetailsModal" class="license-modal-overlay hidden" onclick="if(event.target===this)closeLicenseDetails();">
+    <div class="license-modal-card lic-details-card">
+      <div class="lic-modal-header">
+        <div class="lic-brand-wrap" style="justify-content: space-between; width: 100%;">
+          <img src="LOGO.png" alt="tunemusic Pro" class="lic-brand-logo" style="height: 48px;">
+          <span class="lic-badge-pro" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border-color: rgba(16, 185, 129, 0.4);">LICENCIADO</span>
+        </div>
+        <h2 class="lic-modal-title" style="font-size: 1.25rem; margin-top: 14px;">Certificado de Licença • tunemusic Pro</h2>
+      </div>
+
+      <div class="lic-modal-body">
+        <div class="lic-details-grid">
+          <div class="lic-detail-item">
+            <span class="ld-label">TITULAR / CLIENTE</span>
+            <span id="ldClientName" class="ld-val">-</span>
+          </div>
+          <div class="lic-detail-item">
+            <span class="ld-label">PLANO CONTRATADO</span>
+            <span id="ldPlan" class="ld-val" style="color: #00f0ff;">-</span>
+          </div>
+          <div class="lic-detail-item">
+            <span class="ld-label">VALIDADE</span>
+            <span id="ldExpires" class="ld-val" style="color: #10b981;">Vitalícia</span>
+          </div>
+          <div class="lic-detail-item">
+            <span class="ld-label">ID DA MÁQUINA (HWID)</span>
+            <span id="ldHwid" class="ld-val font-mono" style="font-size: 0.82rem;">-</span>
+          </div>
+          <div class="lic-detail-item">
+            <span class="ld-label">DATA DE ATIVAÇÃO</span>
+            <span id="ldIssued" class="ld-val">-</span>
+          </div>
+          <div class="lic-detail-item">
+            <span class="ld-label">STATUS DE SEGURANÇA</span>
+            <span class="ld-val" style="color: #10b981;">✔️ Criptografia HMAC-SHA256 (Ativo)</span>
+          </div>
+        </div>
+
+        <div class="lic-details-actions">
+          <button type="button" class="lic-btn-copy" onclick="closeLicenseDetails();" style="flex: 1; padding: 10px;">Fechar Janela</button>
+          <button type="button" class="lic-btn-danger" onclick="deactivateCurrentLicense();" title="Desativar este PC para transferir a licença">Desativar Licença</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="stageprompter_api.js"></script>
+  <script src="renderer.js"></script>
+  <script src="vocal_remover.js"></script>
+
+  <script>
+    // =========================================================================
+    // UNIFIED DESKTOP WORKSTATION CONTROLLER (VOCAL REMOVER + STAGEPROMPTER)
+    // =========================================================================
+    (function() {
+      // 1. Digital Clock
+      function updateClock() {
+        const clockEl = document.getElementById('studioClock');
+        if (clockEl) {
+          const now = new Date();
+          clockEl.textContent = now.toLocaleTimeString('pt-BR');
+        }
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
+
+      // 2. Fullscreen Toggle (F11 / Native Desktop)
+      window.toggleAppFullscreen = function() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          if (document.exitFullscreen) document.exitFullscreen();
+        }
+      };
+
+      // 3. Audio Tools Opener (Embeds and routes the 8 Vocal Remover Vue Tools)
+      const toolIcons = {
+        '/pt/': '🎤',
+        '/pt/splitter-ai': '🎚️',
+        '/pt/pitch': '🎵',
+        '/pt/key-bpm-finder': '⚡',
+        '/pt/cutter': '✂️',
+        '/pt/joiner': '🔗',
+        '/pt/voice-recorder': '🎙️',
+        '/pt/karaoke': '🎶'
+      };
+
+      window.openAudioTool = function(path, title) {
+        // Set TopBar status
+        const titleText = document.getElementById('studioTitleText');
+        const titleIcon = document.getElementById('studioTitleIcon');
+        const catBadge = document.getElementById('studioCategoryBadge');
+
+        if (titleText) titleText.textContent = title || 'Ferramenta de Áudio';
+        if (titleIcon) titleIcon.textContent = toolIcons[path] || '🎧';
+        if (catBadge) {
+          catBadge.textContent = 'ÁUDIO & IA';
+          catBadge.style.color = '#00f0ff';
+        }
+
+        // Highlight sidebar button
+        document.querySelectorAll('#studioSidebar .sidebar-item').forEach(btn => {
+          btn.classList.toggle('active', btn.getAttribute('data-tool-path') === path);
+        });
+
+        // Show Audio Suite Screen
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        const suite = document.getElementById('audioSuiteScreen');
+        if (suite) suite.classList.add('active');
+
+        const backHomeBtn = document.getElementById('topbarBackHomeBtn');
+        if (backHomeBtn) backHomeBtn.style.display = 'inline-flex';
+
+        // Route inside iframe
+        const iframe = document.getElementById('vocalToolsIframe');
+        if (iframe) {
+          try {
+            if (iframe.contentWindow) {
+              iframe.contentWindow.postMessage({ type: 'navigate_tool', path: path }, '*');
+            }
+          } catch(err) {}
+          
+          try {
+            const cur = iframe.contentWindow ? iframe.contentWindow.location.pathname : '';
+            if (cur !== path) {
+              iframe.src = path;
+            }
+          } catch(e) {
+            iframe.src = path;
+          }
+        }
+      };
+
+      // 4. Hook and enhance showScreen
+      const screenTitles = {
+        'homeScreen': { title: 'Painel Central', icon: '🏠', cat: 'VISÃO GERAL', color: '#00f0ff' },
+        'liveShowScreen': { title: 'Teleprompter Ao Vivo', icon: '📺', cat: 'PALCO', color: '#10b981' },
+        'repertoireScreen': { title: 'Repertório & Setlists', icon: '📋', cat: 'PALCO', color: '#3b82f6' },
+        'searchScreen': { title: 'Buscar Letras', icon: '🔍', cat: 'PALCO', color: '#00f0ff' },
+        'mySongsScreen': { title: 'Minhas Músicas', icon: '📁', cat: 'PALCO', color: '#f59e0b' },
+        'messagesScreen': { title: 'Mensagens no Telão', icon: '💬', cat: 'PALCO', color: '#06b6d4' },
+        'lyricsScreen': { title: 'Editor de Letra (TP)', icon: '🎤', cat: 'PALCO', color: '#10b981' },
+        'vocalRemoverScreen': { title: 'Separador Vocal', icon: '🎛️', cat: 'ÁUDIO & IA', color: '#00f0ff' }
+      };
+
+      const originalShowScreen = window.showScreen;
+      window.showScreen = function(screenId) {
+        // Toggle topbar back to home button
+        const backHomeBtn = document.getElementById('topbarBackHomeBtn');
+        if (backHomeBtn) {
+          backHomeBtn.style.display = (screenId === 'homeScreen') ? 'none' : 'inline-flex';
+        }
+
+        // Update topbar title and category
+        const meta = screenTitles[screenId] || { title: screenId, icon: '🖥️', cat: 'PALCO & SHOW', color: '#64748b' };
+        const titleText = document.getElementById('studioTitleText');
+        const titleIcon = document.getElementById('studioTitleIcon');
+        const catBadge = document.getElementById('studioCategoryBadge');
+
+        if (titleText) titleText.textContent = meta.title;
+        if (titleIcon) titleIcon.textContent = meta.icon;
+        if (catBadge) {
+          catBadge.textContent = meta.cat;
+          catBadge.style.color = meta.color;
+        }
+
+        // Delegate to original showScreen or DOM toggle
+        if (typeof originalShowScreen === 'function') {
+          originalShowScreen(screenId);
+        } else {
+          document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+          const el = document.getElementById(screenId);
+          if (el) el.classList.add('active');
+        }
+
+        if (screenId === 'vocalRemoverScreen' && window.vocalRemoverStudio) {
+          window.vocalRemoverStudio.loadRecentTasks();
+        }
+      };
+
+      // 5. Fast Action Helpers
+      window.triggerVideoExport = function() {
+        const btn = document.getElementById('homeVideoCard');
+        if (btn) btn.click();
+        else if (typeof window.vsOpen === 'function') window.vsOpen();
+      };
+
+      window.triggerAudioTranscription = function() {
+        const btn = document.getElementById('homeTranscribeCard');
+        if (btn) btn.click();
+        else if (typeof window.tryOpenTranscribe === 'function') window.tryOpenTranscribe();
+      };
+
+      // 6. Inter-app PostMessage Bridge
+      window.addEventListener('message', function(event) {
+        if (!event.data) return;
+        if (event.data.type === 'open_in_prompter') {
+          const { audioUrl, name } = event.data;
+          console.log('[Master Studio Bridge] Playback recebido para o StagePrompter:', name, audioUrl);
+          window.showScreen('searchScreen');
+          const searchInput = document.getElementById('searchInput');
+          if (searchInput) {
+            searchInput.value = name;
+            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            searchInput.focus();
+          }
+        }
+      });
+
+      // =======================================================================
+      // 7. CRYPTOGRAPHIC HARDWARE LICENSING & ACTIVATION CONTROLLER
+      // =======================================================================
+      let currentLicenseData = null;
+
+      window.checkLicenseState = async function() {
+        try {
+          const res = await fetch('/api/license/status');
+          const data = await res.json();
+          currentLicenseData = data;
+
+          const actModal = document.getElementById('licenseActivationModal');
+          const hwidInput = document.getElementById('licMachineIdInput');
+          const userBadge = document.getElementById('userBadge');
+          const badgeName = document.getElementById('userBadgeName');
+          const badgePlan = document.getElementById('userBadgePlan');
+          const badgeExp = document.getElementById('userBadgeExp');
+
+          if (data && data.licensed) {
+            // Unlocked state
+            if (actModal) actModal.classList.add('hidden');
+            if (userBadge) {
+              userBadge.classList.remove('hidden');
+              if (badgeName) badgeName.textContent = data.client || 'tunemusic Pro';
+              if (badgePlan) badgePlan.textContent = (data.plan || 'PRO').replace('tunemusic ', '').toUpperCase();
+              if (badgeExp) badgeExp.textContent = data.expires || 'Vitalícia';
+            }
+          } else {
+            // Locked state (unlicensed)
+            if (actModal) actModal.classList.remove('hidden');
+            if (hwidInput && data.hwid) hwidInput.value = data.hwid;
+            if (userBadge) userBadge.classList.add('hidden');
+          }
+        } catch (err) {
+          console.warn('[License Manager] Erro ao verificar licença:', err);
+        }
+      };
+
+      window.copyMachineHwid = function() {
+        const input = document.getElementById('licMachineIdInput');
+        const text = input ? input.value : '';
+        if (!text) return;
+        
+        navigator.clipboard.writeText(text).then(() => {
+          const copyText = document.getElementById('licCopyText');
+          const copyIcon = document.getElementById('licCopyIcon');
+          if (copyText) copyText.textContent = 'Copiado!';
+          if (copyIcon) copyIcon.textContent = '✔️';
+          setTimeout(() => {
+            if (copyText) copyText.textContent = 'Copiar ID';
+            if (copyIcon) copyIcon.textContent = '📋';
+          }, 2500);
+        }).catch(() => {
+          if (input) {
+            input.select();
+            document.execCommand('copy');
+          }
+        });
+      };
+
+      window.submitLicenseActivation = async function() {
+        const keyInput = document.getElementById('licKeyInput');
+        const feedback = document.getElementById('licFeedbackMsg');
+        const btn = document.getElementById('licActivateBtn');
+        const spinner = document.getElementById('licActSpinner');
+        const btnText = document.getElementById('licActBtnText');
+
+        const key = keyInput ? keyInput.value.trim() : '';
+        if (!key) {
+          if (feedback) {
+            feedback.className = 'lic-feedback-msg error';
+            feedback.textContent = '⚠️ Por favor, cole a chave de ativação completa (começa com TM-).';
+            feedback.classList.remove('hidden');
+          }
+          if (keyInput) keyInput.focus();
+          return;
+        }
+
+        // Show loading state
+        if (btn) btn.disabled = true;
+        if (spinner) spinner.classList.remove('hidden');
+        if (btnText) btnText.textContent = 'Verificando Assinatura Criptográfica...';
+        if (feedback) feedback.classList.add('hidden');
+
+        try {
+          const res = await fetch('/api/license/activate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: key })
+          });
+          const result = await res.json();
+
+          if (res.ok && result.ok) {
+            if (feedback) {
+              feedback.className = 'lic-feedback-msg success';
+              feedback.textContent = '✔️ ' + (result.message || 'Licença autenticada com sucesso! Liberando acesso...');
+              feedback.classList.remove('hidden');
+            }
+            if (btnText) btnText.textContent = '✔️ Licenciado com Sucesso!';
+            
+            setTimeout(() => {
+              window.checkLicenseState();
+              if (btn) btn.disabled = false;
+              if (spinner) spinner.classList.add('hidden');
+              if (btnText) btnText.textContent = '🚀 Ativar tunemusic Pro Agora';
+            }, 1200);
+          } else {
+            if (feedback) {
+              feedback.className = 'lic-feedback-msg error';
+              feedback.textContent = '❌ ' + (result.detail || result.message || 'Chave de licença inválida para esta máquina.');
+              feedback.classList.remove('hidden');
+            }
+            if (btn) btn.disabled = false;
+            if (spinner) spinner.classList.add('hidden');
+            if (btnText) btnText.textContent = '🚀 Ativar tunemusic Pro Agora';
+          }
+        } catch (e) {
+          if (feedback) {
+            feedback.className = 'lic-feedback-msg error';
+            feedback.textContent = '❌ Erro de conexão com o motor de ativação: ' + e.message;
+            feedback.classList.remove('hidden');
+          }
+          if (btn) btn.disabled = false;
+          if (spinner) spinner.classList.add('hidden');
+          if (btnText) btnText.textContent = '🚀 Ativar tunemusic Pro Agora';
+        }
+      };
+
+      window.openLicenseDetails = async function() {
+        if (!currentLicenseData) {
+          await window.checkLicenseState();
+        }
+        if (!currentLicenseData || !currentLicenseData.licensed) {
+          return;
+        }
+        const modal = document.getElementById('licenseDetailsModal');
+        if (!modal) return;
+
+        document.getElementById('ldClientName').textContent = currentLicenseData.client || 'Produtor Musical';
+        document.getElementById('ldPlan').textContent = currentLicenseData.plan || 'tunemusic Pro Vitalício';
+        document.getElementById('ldExpires').textContent = currentLicenseData.expires || 'Vitalícia';
+        document.getElementById('ldHwid').textContent = currentLicenseData.hwid || '-';
+        document.getElementById('ldIssued').textContent = currentLicenseData.issued || '18/10/2026';
+
+        modal.classList.remove('hidden');
+      };
+
+      window.closeLicenseDetails = function() {
+        const modal = document.getElementById('licenseDetailsModal');
+        if (modal) modal.classList.add('hidden');
+      };
+
+      window.deactivateCurrentLicense = async function() {
+        if (!confirm('Tem certeza de que deseja desativar a licença deste computador? O sistema voltará ao estado bloqueado até que uma nova chave seja inserida.')) {
+          return;
+        }
+        try {
+          await fetch('/api/license/reset', { method: 'POST' });
+          window.closeLicenseDetails();
+          window.checkLicenseState();
+        } catch (e) {
+          alert('Erro ao desativar: ' + e.message);
+        }
+      };
+
+      // Check license on startup
+      window.checkLicenseState();
+    })();
+  </script>
+</body>
+</html>

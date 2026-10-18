@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tunemusic • Vocal Studio Engine</title>
+    <meta name="action-cable-url" content="/cable">
+    <style>
+      :root {
+        --nav-width: 0px !important;
+        --burger-size: 0px !important;
+      }
+
+      html, body {
+        background: #090C12 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        user-select: none;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        width: 100% !important;
+        height: 100% !important;
+      }
+
+      /* Hide old overlapping header and old navigation bar */
+      #desktop-studio-bar { display: none !important; }
+      nav.bar, .bar { display: none !important; }
+      .app-menu-burger { display: none !important; }
+      menu, menu li { display: none !important; }
+
+      #app {
+        width: 100% !important;
+        min-height: 100% !important;
+        height: 100% !important;
+        background: #090C12 !important;
+        display: block !important;
+      }
+
+      /* Let pages fill full width cleanly without sidebar margins */
+      #app > main, main.pages, .pages, body.with-menu #app > main {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 100% !important;
+        padding: 24px 32px !important;
+        box-sizing: border-box !important;
+        background: transparent !important;
+        display: block !important;
+      }
+
+      /* Replace the purple scrollbar with sleek studio scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px !important;
+        height: 6px !important;
+      }
+      ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2) !important;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.16) !important;
+        border-radius: 10px !important;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 240, 255, 0.5) !important;
+      }
+
+      /* Floating Bridge to StagePrompter Button */
+      #studio-prompter-bridge {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: linear-gradient(135deg, #00f0ff, #00b4d8);
+        color: #041017 !important;
+        font-weight: 800;
+        font-size: 0.94rem;
+        padding: 13px 22px;
+        border-radius: 10px;
+        box-shadow: 0 0 25px rgba(0, 240, 255, 0.5);
+        border: none;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        gap: 9px;
+        z-index: 999999;
+        transition: all 0.2s ease;
+      }
+      #studio-prompter-bridge:hover {
+        transform: translateY(-2px) scale(1.03);
+        box-shadow: 0 0 35px rgba(0, 240, 255, 0.8);
+        filter: brightness(1.1);
+      }
+
+      /* Unified Studio Pro Components in Vocal Tools */
+      h1, .page h1 {
+        font-size: 2.2rem !important;
+        font-weight: 900 !important;
+        letter-spacing: -0.8px !important;
+        color: #ffffff !important;
+        margin-bottom: 8px !important;
+      }
+
+      h2, .page h2, .page p {
+        font-size: 1rem !important;
+        color: #94a3b8 !important;
+        font-weight: 500 !important;
+        line-height: 1.5 !important;
+      }
+
+      /* Unified Upload Button */
+      button.upload,
+      .upload-btn,
+      .btn-upload,
+      button.primary,
+      .page button.upload {
+        background: linear-gradient(135deg, #00f0ff 0%, #00b4d8 100%) !important;
+        color: #041017 !important;
+        font-weight: 800 !important;
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 14px 32px !important;
+        font-size: 0.95rem !important;
+        box-shadow: 0 4px 20px rgba(0, 240, 255, 0.4) !important;
+        cursor: pointer !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      }
+
+      button.upload:hover,
+      .upload-btn:hover,
+      .btn-upload:hover,
+      button.primary:hover,
+      .page button.upload:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 30px rgba(0, 240, 255, 0.65) !important;
+        filter: brightness(1.08) !important;
+      }
+
+      /* Audio Players & Waveforms */
+      .player, .page-player, .tracks, .waveform-wrap {
+        background: #0f1420 !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 14px !important;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5) !important;
+      }
+
+      /* Sliders matching the master app */
+      input[type="range"] {
+        -webkit-appearance: none !important;
+        appearance: none !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        height: 6px !important;
+        border-radius: 4px !important;
+        outline: none !important;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none !important;
+        appearance: none !important;
+        width: 16px !important;
+        height: 16px !important;
+        border-radius: 50% !important;
+        background: #00f0ff !important;
+        box-shadow: 0 0 12px rgba(0, 240, 255, 0.8) !important;
+        cursor: pointer !important;
+        transition: transform 0.15s ease !important;
+      }
+
+      input[type="range"]::-webkit-slider-thumb:hover {
+        transform: scale(1.25) !important;
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-984f238b.js"></script>
+    <link rel="stylesheet" href="/assets/style-94964cad.css">
+    <link rel="stylesheet" href="/assets/responsive-mobile.css">
+    <script type="module">
+      import.meta.url;
+      import("_").catch(() => 1);
+      async function* g() {};
+      window.__vite_is_modern_browser = true;
+    </script>
+  </head>
+
+  <body>
+    <div id="app">
+      <!-- Hidden navigation template for Vue router initialization -->
+      <nav class="bar" style="display:none !important;">
+        <div class="tools">
+          <a href="/pt/" id="route-remover">Removedor</a>
+          <a href="/pt/splitter-ai" id="route-splitter">Splitter</a>
+          <a href="/pt/pitch" id="route-pitch">Mudar de tom</a>
+          <a href="/pt/key-bpm-finder" id="route-bpm">Determinar Tom e BPM</a>
+          <a href="/pt/cutter" id="route-cutter">Cortador</a>
+          <a href="/pt/joiner" id="route-joiner">Juntar</a>
+          <a href="/pt/voice-recorder" id="route-recorder">Gravador</a>
+          <a href="/pt/karaoke" id="route-karaoke">Karaoke</a>
+        </div>
+      </nav>
+      <main data-v-d335a5bf="" data-v-58a8a39f="" class="pages">
+        <div data-v-d335a5bf="" class="page centered">
+          <h1 data-v-d335a5bf="">Carregando Ferramenta...</h1>
+        </div>
+      </main>
+    </div>
+
+    <!-- Floating Bridge Button: When an audio is ready/playing in any tool, send directly to tunemusic -->
+    <button type="button" id="studio-prompter-bridge">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <polygon points="6 3 20 12 6 21 6 3"/>
+      </svg>
+      <span>Abrir este Playback no tunemusic ➔</span>
+    </button>
+
+    <script>
+      (function() {
+        // 1. Listen for navigation commands from the Master Studio
+        window.addEventListener('message', function(event) {
+          const data = event.data;
+          if (!data) return;
+
+          if (data.type === 'navigate_tool') {
+            const targetPath = data.path; // e.g. '/pt/pitch', '/pt/cutter'
+            console.log('[VocalTools] Navigating to:', targetPath);
+            const matchingLink = document.querySelector(`a[href*="${targetPath}"]`) || document.querySelector(`a[href="${targetPath}"]`);
+            if (matchingLink) {
+              matchingLink.click();
+            } else {
+              window.location.pathname = targetPath;
+            }
+          }
+        });
+
+        // 2. Detect audio players and show the bridge button
+        const bridgeBtn = document.getElementById('studio-prompter-bridge');
+
+        function checkAudioReady() {
+          const playerWrap = document.querySelector('.player-encode, .page-player, .player, canvas');
+          const audioEls = document.querySelectorAll('audio, source');
+          let hasStem = false;
+          let stemUrl = '';
+
+          for (const a of audioEls) {
+            const src = a.src || a.getAttribute('src');
+            if (src && (src.includes('music') || src.includes('instrumental') || src.includes('listen') || src.includes('blob:'))) {
+              hasStem = true;
+              stemUrl = src;
+              break;
+            }
+          }
+
+          if (playerWrap && bridgeBtn) {
+            bridgeBtn.style.display = 'flex';
+            bridgeBtn.onclick = function() {
+              const songTitle = document.querySelector('.player-title, .title, h1, h2')?.textContent || 'Música do Estúdio';
+              // Notify parent Master Studio
+              if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                  type: 'open_in_prompter',
+                  audioUrl: stemUrl,
+                  name: songTitle.trim()
+                }, '*');
+              }
+            };
+          }
+        }
+
+        const observer = new MutationObserver(checkAudioReady);
+        observer.observe(document.body, { childList: true, subtree: true });
+        setInterval(checkAudioReady, 1500);
+      })();
+    </script>
+  </body>
+</html>

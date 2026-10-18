@@ -8,6 +8,13 @@ import uuid
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+# On Windows, use SelectorEventLoop to prevent WinError 64 / socket disconnection issues
+if sys.platform == "win32":
+    try:
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    except Exception:
+        pass
+
 from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, Response
@@ -23,7 +30,24 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 OUTPUT_DIR.mkdir(exist_ok=True)
 STATIC_DIR.mkdir(exist_ok=True)
 
-app = FastAPI(title="VocalRemover Authentic Reconstructed Engine")
+app = FastAPI(title="tunemusic Pro Authentic Reconstructed Engine")
+
+def silence_windows_socket_closed(loop, context):
+    exception = context.get('exception')
+    if isinstance(exception, OSError) and getattr(exception, 'winerror', None) in (64, 121, 10054):
+        return  # Suppress harmless Windows client disconnect noise
+    try:
+        loop.default_exception_handler(context)
+    except Exception:
+        pass
+
+@app.on_event("startup")
+async def startup_event():
+    try:
+        loop = asyncio.get_running_loop()
+        loop.set_exception_handler(silence_windows_socket_closed)
+    except Exception:
+        pass
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,6 +56,91 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from stageprompter_engine import router as stageprompter_router
+app.include_router(stageprompter_router)
+
+from license_engine import (
+    get_system_hwid,
+    load_installed_license,
+    save_license,
+    remove_license,
+    verify_license_key
+)
+
+# =============================================================================
+# 0. CRYPTOGRAPHIC HARDWARE LICENSING & ANTI-PIRACY GATEKEEPER
+# =============================================================================
+@app.middleware("http")
+async def license_gatekeeper_middleware(request, call_next):
+    path = request.url.path
+    
+    # Allow license management endpoints, static assets, media, and UI shells
+    if (
+        path.startswith("/api/license")
+        or path.startswith("/stageprompter")
+        or path.startswith("/assets")
+        or path.startswith("/fonts")
+        or path.startswith("/img")
+        or path.startswith("/uploads")
+        or path.startswith("/output")
+        or path in ("/", "/tunemusic", "/tunemusic/", "/pt", "/pt/", "/presentation", "/favicon.ico", "/LOGO.png")
+    ):
+        return await call_next(request)
+    
+    # Enforce license for heavy processing & data operations
+    if path.startswith("/split/tracks") or path.startswith("/api/stageprompter/video") or (path.startswith("/api/stageprompter/") and request.method in ("POST", "PUT", "DELETE")):
+        is_licensed, info = load_installed_license()
+        if not is_licensed:
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "detail": "Acesso Bloqueado: Este computador não possui licença ativa do tunemusic Pro.",
+                    "hwid": get_system_hwid(),
+                    "message": info.get("message", "Licença necessária para executar esta ação.")
+                }
+            )
+
+    return await call_next(request)
+
+
+@app.get("/api/license/status")
+async def get_license_status():
+    is_licensed, info = load_installed_license()
+    return info
+
+
+@app.get("/api/license/hwid")
+async def get_license_hwid():
+    return {
+        "hwid": get_system_hwid()
+    }
+
+
+@app.post("/api/license/activate")
+async def activate_license(data: dict):
+    key = data.get("key", "").strip()
+    if not key:
+        raise HTTPException(status_code=400, detail="Chave de licença não fornecida.")
+    
+    success, message, payload = save_license(key)
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    
+    return {
+        "ok": True,
+        "message": message,
+        "payload": payload
+    }
+
+
+@app.post("/api/license/reset")
+async def reset_license(data: Optional[dict] = None):
+    remove_license()
+    return {
+        "ok": True,
+        "message": "Licença desinstalada com sucesso."
+    }
 
 tasks: Dict[str, Dict[str, Any]] = {}
 active_connections: Dict[str, List[tuple]] = {}
@@ -82,6 +191,19 @@ async def upload_split_tracks(file: UploadFile = File(...), model: int = Form(1)
 async def get_task_status(task_id: str):
     if task_id in tasks:
         return tasks[task_id]
+    task_out_dir = OUTPUT_DIR / task_id
+    if task_out_dir.exists() and (task_out_dir / "vocal.wav").exists() and (task_out_dir / "music.wav").exists():
+        task_info = {
+            "id": task_id,
+            "key": "stem",
+            "filename": "Audio",
+            "status": "ready",
+            "progress": 100,
+            "tonality": "C",
+            "bpm": 120
+        }
+        tasks[task_id] = task_info
+        return task_info
     raise HTTPException(status_code=404, detail="Tarefa não encontrada")
 
 async def broadcast_ws(task_id: str, message: dict):
@@ -96,27 +218,29 @@ async def broadcast_ws(task_id: str, message: dict):
                 pass
 
 
-MODAL_GPU_URL = os.getenv("MODAL_GPU_URL", "https://appwillb--vocal-remover-ai-api.us-east.modal.run/separate")
-MODAL_TUNE_URL = os.getenv("MODAL_TUNE_URL", "https://appwillb--vocal-remover-ai-api.us-east.modal.run/tune")
+MODAL_GPU_URL = os.getenv("MODAL_GPU_URL", "")
+MODAL_TUNE_URL = os.getenv("MODAL_TUNE_URL", "")
 
 
 async def run_demucs_task(task_id: str, input_path: Path, model: int):
     task_out_dir = OUTPUT_DIR / task_id
     task_out_dir.mkdir(exist_ok=True)
 
-    await broadcast_ws(task_id, {"status": "processing", "progress": 20})
+    tasks[task_id]["status"] = "processing"
+    tasks[task_id]["progress"] = 10
+    await broadcast_ws(task_id, {"status": "processing", "progress": 10})
 
-    # 1. Tentar via Modal Serverless GPU (Gratuito, rápido e não pesa na VPS)
+    # Optional remote Modal GPU only if explicitly specified by user via environment
     if MODAL_GPU_URL:
         try:
             import httpx
             import base64
 
-            await broadcast_ws(task_id, {"status": "processing", "progress": 40})
+            await broadcast_ws(task_id, {"status": "processing", "progress": 30})
             print(f"[{task_id}] Enviando audio para Modal GPU...")
 
             audio_data = input_path.read_bytes()
-            async with httpx.AsyncClient(timeout=180.0) as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 resp = await client.post(
                     MODAL_GPU_URL,
                     content=audio_data,
@@ -133,6 +257,7 @@ async def run_demucs_task(task_id: str, input_path: Path, model: int):
                     (task_out_dir / "music.wav").write_bytes(music_bytes)
 
                     tasks[task_id]["status"] = "ready"
+                    tasks[task_id]["progress"] = 100
                     await broadcast_ws(task_id, {
                         "status": "ready",
                         "id": task_id,
@@ -142,16 +267,14 @@ async def run_demucs_task(task_id: str, input_path: Path, model: int):
                     })
                     print(f"[{task_id}] Processamento concluído via Modal GPU com sucesso!")
                     return
-                else:
-                    print(f"[{task_id}] Modal retornou erro interno:", data.get("error"))
-            else:
-                print(f"[{task_id}] Modal HTTP status:", resp.status_code)
         except Exception as e:
-            print(f"[{task_id}] Erro na conexão com Modal GPU, tentando fallback:", e)
+            print(f"[{task_id}] Modal ignorado, executando localmente:", e)
 
-    # 2. Fallback: Processamento local
+    # Execução 100% Local (com aceleração NVIDIA RTX CUDA se disponível)
     import torch
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    device_name = torch.cuda.get_device_name(0) if device == "cuda" else "CPU Multi-Core"
+    print(f"[{task_id}] Processamento LOCAL com Demucs v4 em tempo real (Hardware: {device.upper()} - {device_name})...")
 
     cores = "1" if device == "cuda" else str(max(1, (os.cpu_count() or 2)))
     cmd = [
@@ -160,7 +283,7 @@ async def run_demucs_task(task_id: str, input_path: Path, model: int):
         "demucs.separate",
         "-n", "htdemucs",
         "-d", device,
-        "--shifts", "1",
+        "--shifts", "0",
         "--overlap", "0.1",
         "-j", cores,
         "--clip-mode", "clamp",
@@ -179,13 +302,25 @@ async def run_demucs_task(task_id: str, input_path: Path, model: int):
             stderr=asyncio.subprocess.PIPE
         )
 
-        await broadcast_ws(task_id, {"status": "processing", "progress": 50})
+        # Background progress ticker while Demucs is computing
+        async def progress_ticker():
+            current_p = 15
+            while process.returncode is None:
+                await asyncio.sleep(2)
+                if current_p < 90:
+                    current_p += 15
+                    tasks[task_id]["progress"] = current_p
+                    await broadcast_ws(task_id, {"status": "processing", "progress": current_p})
+
+        ticker_task = asyncio.create_task(progress_ticker())
 
         stdout, stderr = await process.communicate()
+        ticker_task.cancel()
 
         if process.returncode != 0:
-            print("Demucs error:", stderr.decode(errors="ignore"))
-            await broadcast_ws(task_id, {"status": "error", "message": "Falha na separação"})
+            err_msg = stderr.decode(errors="ignore")
+            print("Demucs error:", err_msg)
+            await broadcast_ws(task_id, {"status": "error", "message": "Falha na separação: " + err_msg[:100]})
             return
 
         # Map stems
@@ -200,8 +335,13 @@ async def run_demucs_task(task_id: str, input_path: Path, model: int):
                     shutil.copy2(p, task_out_dir / "bass.wav")
                 elif f.startswith("drums."):
                     shutil.copy2(p, task_out_dir / "drums.wav")
+                elif f.startswith("other."):
+                    shutil.copy2(p, task_out_dir / "other.wav")
+                    if not (task_out_dir / "music.wav").exists():
+                        shutil.copy2(p, task_out_dir / "music.wav")
 
         tasks[task_id]["status"] = "ready"
+        tasks[task_id]["progress"] = 100
         await broadcast_ws(task_id, {
             "status": "ready",
             "id": task_id,
@@ -209,6 +349,7 @@ async def run_demucs_task(task_id: str, input_path: Path, model: int):
             "tonality": "C",
             "bpm": 120
         })
+        print(f"[{task_id}] Processamento concluído com sucesso!")
 
     except Exception as e:
         print("Task error:", e)
@@ -287,6 +428,10 @@ def ensure_mp3_converted(wav_path: Path, mp3_path: Path):
     if mp3_path.exists():
         return
     ffmpeg_bin = shutil.which("ffmpeg")
+    if not ffmpeg_bin:
+        bundled = BASE_DIR / "bin" / "ffmpeg.exe"
+        if bundled.exists():
+            ffmpeg_bin = str(bundled)
     if ffmpeg_bin:
         try:
             subprocess.run(
@@ -418,121 +563,135 @@ async def get_user():
         "statusCode": 200
     }
 
-# 5.1 Vocal Studio Pitch Corrector API
-@app.post("/api/tune-vocal")
-async def tune_vocal_endpoint(
-    file: UploadFile = File(...),
-    root: str = Form("C"),
-    scale: str = Form("major"),
-    strength: float = Form(0.85),
-    retune_speed: float = Form(0.5),
-    preserve_vibrato: bool = Form(True)
-):
-    """
-    Endpoint para afinação vocal profissional:
-    1. Tenta via Modal Serverless GPU na nuvem
-    2. Fallback transparente local com vocal_tuner.py
-    """
-    import tempfile
-    audio_bytes = await file.read()
-    if not audio_bytes:
-        raise HTTPException(status_code=400, detail="Arquivo de audio vazio")
-
-    # 1. Tentar Modal GPU
-    if MODAL_TUNE_URL:
-        try:
-            import httpx
-            import base64
-            params = {
-                "root": root,
-                "scale": scale,
-                "strength": str(strength),
-                "retune_speed": str(retune_speed),
-                "preserve_vibrato": "true" if preserve_vibrato else "false"
-            }
-            async with httpx.AsyncClient(timeout=180.0) as client:
-                resp = await client.post(
-                    MODAL_TUNE_URL,
-                    params=params,
-                    content=audio_bytes,
-                    headers={"Content-Type": "application/octet-stream"}
-                )
-
-            if resp.status_code == 200:
-                data = resp.json()
-                if data.get("status") == "success":
-                    tuned_bytes = base64.b64decode(data["tuned_b64"])
-                    print(f"[Tune] Áudio afinado com sucesso via Modal GPU ({root} {scale}, {strength*100:.0f}%)")
-                    return Response(content=tuned_bytes, media_type="audio/wav")
-                else:
-                    print("[Tune] Modal retornou erro interno:", data.get("error"))
-            else:
-                print("[Tune] Modal HTTP status:", resp.status_code, resp.text[:150])
-        except Exception as e:
-            print("[Tune] Erro ao conectar com Modal GPU, usando fallback local:", e)
-
-    # 2. Fallback Local via vocal_tuner.py
-    try:
-        from vocal_tuner import tune_vocal
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as in_f, \
-             tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as out_f:
-            in_path = in_f.name
-            out_path = out_f.name
-            in_f.write(audio_bytes)
-
-        tune_vocal(
-            in_path,
-            out_path,
-            root=root,
-            scale=scale,
-            strength=strength,
-            retune_speed=retune_speed,
-            preserve_vibrato=preserve_vibrato
-        )
-
-        with open(out_path, "rb") as f:
-            tuned_bytes = f.read()
-
-        try:
-            os.remove(in_path)
-            os.remove(out_path)
-        except Exception:
-            pass
-
-        print(f"[Tune] Áudio afinado via processador local ({root} {scale})")
-        return Response(content=tuned_bytes, media_type="audio/wav")
-    except Exception as e:
-        print("[Tune] Erro no fallback local:", e)
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/tuner")
-@app.get("/pt/tuner")
-async def serve_tuner_page():
-    tuner_file = STATIC_DIR / "tuner.html"
-    if tuner_file.exists():
-        return FileResponse(tuner_file)
+# 5.2 tunemusic & StagePrompter Routes & Integration Bridge
+@app.get("/tunemusic")
+@app.get("/tunemusic/")
+@app.get("/pt/tunemusic")
+@app.get("/pt/tunemusic/")
+@app.get("/stageprompter")
+@app.get("/stageprompter/")
+@app.get("/pt/stageprompter")
+@app.get("/pt/stageprompter/")
+async def serve_stageprompter_page():
+    stageprompter_file = STATIC_DIR / "stageprompter" / "index.html"
+    if stageprompter_file.exists():
+        return FileResponse(stageprompter_file)
     return FileResponse(STATIC_DIR / "index.html")
 
-# 6. Serve static assets
+@app.get("/stageprompter/presentation")
+@app.get("/stageprompter/presentation/")
+@app.get("/pt/stageprompter/presentation")
+@app.get("/pt/stageprompter/presentation/")
+async def serve_stageprompter_presentation():
+    presentation_file = STATIC_DIR / "stageprompter" / "presentation.html"
+    if presentation_file.exists():
+        return FileResponse(presentation_file)
+    return FileResponse(STATIC_DIR / "index.html")
 
+@app.get("/api/stageprompter/vocal-tasks")
+async def list_vocal_remover_tasks():
+    """
+    Retorna tarefas de separação do Vocal Remover para importação 1-click no StagePrompter.
+    """
+    result = []
+    for task_id, t in tasks.items():
+        if t.get("status") == "ready":
+            key = t.get("key", "stem")
+            result.append({
+                "id": task_id,
+                "filename": t.get("filename", "audio"),
+                "instrumental_url": f"/split/listen/music/{task_id}/{key}",
+                "vocal_url": f"/split/listen/vocal/{task_id}/{key}",
+                "mix_url": f"/split/listen/mix/{task_id}/{key}",
+                "bpm": t.get("bpm", 120),
+                "tonality": t.get("tonality", "C")
+            })
+    try:
+        for d in OUTPUT_DIR.iterdir():
+            if d.is_dir() and d.name not in tasks:
+                if (d / "music.wav").exists() or (d / "vocal.wav").exists():
+                    tid = d.name
+                    result.append({
+                        "id": tid,
+                        "filename": f"Música {tid[:8]}",
+                        "instrumental_url": f"/split/listen/music/{tid}/local",
+                        "vocal_url": f"/split/listen/vocal/{tid}/local",
+                        "mix_url": f"/split/listen/mix/{tid}/local",
+                        "bpm": 120,
+                        "tonality": "C"
+                    })
+    except Exception:
+        pass
+    return result
+
+# 6. Serve static assets
+STAGEPROMPTER_DIR = STATIC_DIR / "stageprompter"
+app.mount("/stageprompter", StaticFiles(directory=str(STAGEPROMPTER_DIR)), name="stageprompter")
+if (STAGEPROMPTER_DIR / "fonts").exists():
+    app.mount("/fonts", StaticFiles(directory=str(STAGEPROMPTER_DIR / "fonts")), name="fonts")
 app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
 app.mount("/img", StaticFiles(directory=str(STATIC_DIR / "img")), name="img")
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+app.mount("/output", StaticFiles(directory=str(OUTPUT_DIR)), name="output")
 
-# 7. SPA catch-all route: any page serves index.html
+# 7. Unified Desktop Workstation Entry Points
 @app.get("/")
-async def root_redirect():
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/pt/")
+@app.get("/tunemusic")
+@app.get("/tunemusic/")
+@app.get("/pt/tunemusic")
+@app.get("/pt/tunemusic/")
+@app.get("/stageprompter")
+@app.get("/stageprompter/")
+@app.get("/pt/stageprompter")
+@app.get("/pt/stageprompter/")
+async def serve_main_app():
+    return FileResponse(STAGEPROMPTER_DIR / "index.html")
+
+VOCAL_TOOLS_FILE = STATIC_DIR / "vocal_tools.html"
+VOCAL_TOOL_PATHS = (
+    "pitch", "cutter", "joiner", "key-bpm-finder", "voice-recorder", "karaoke", "splitter-ai",
+    "pt", "pt/pitch", "pt/cutter", "pt/joiner", "pt/key-bpm-finder", "pt/voice-recorder", "pt/karaoke", "pt/splitter-ai"
+)
+
+@app.get("/pt")
+@app.get("/pt/")
+@app.get("/vocal-tools")
+@app.get("/vocal-tools/{tool_subpath:path}")
+async def serve_vocal_tools(tool_subpath: str = ""):
+    return FileResponse(VOCAL_TOOLS_FILE)
+
+@app.get("/presentation")
+@app.get("/stageprompter/presentation")
+@app.get("/stageprompter/presentation/")
+@app.get("/pt/stageprompter/presentation")
+@app.get("/pt/stageprompter/presentation/")
+async def serve_presentation_app():
+    return FileResponse(STAGEPROMPTER_DIR / "presentation.html")
 
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
-    if full_path.startswith("api/") or full_path.startswith("split/"):
+    if full_path.startswith("api/") or full_path.startswith("split/") or full_path.startswith("uploads/") or full_path.startswith("output/"):
         raise HTTPException(status_code=404)
-    file_path = STATIC_DIR / full_path
-    if file_path.is_file():
-        return FileResponse(file_path)
-    return FileResponse(STATIC_DIR / "index.html")
+    clean_path = full_path.strip("/")
+    if clean_path.startswith("pt/stageprompter") or clean_path == "stageprompter" or clean_path.startswith("pt/tunemusic") or clean_path == "tunemusic":
+        return FileResponse(STAGEPROMPTER_DIR / "index.html")
+    if clean_path == "pt" or clean_path.startswith("pt/") or clean_path in VOCAL_TOOL_PATHS or any(clean_path.startswith(p) for p in ("vocal-tools", "pitch", "cutter", "joiner", "key-bpm-finder", "voice-recorder", "karaoke", "splitter-ai")):
+        return FileResponse(VOCAL_TOOLS_FILE)
+    if full_path in ("index.html",):
+        return FileResponse(STAGEPROMPTER_DIR / "index.html")
+    # Check in stageprompter dir first (e.g. LOGO.png, styles.css)
+    sp_file = STAGEPROMPTER_DIR / full_path
+    if sp_file.is_file():
+        return FileResponse(sp_file)
+    if "presentation" in clean_path:
+        return FileResponse(STAGEPROMPTER_DIR / "presentation.html")
+    # Prevent serving the legacy web app
+    if full_path.startswith("assets/") or full_path.startswith("img/"):
+        file_path = STATIC_DIR / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+    return FileResponse(STAGEPROMPTER_DIR / "index.html")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=False)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

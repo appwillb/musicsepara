@@ -6,11 +6,38 @@ dist/
 wheels/
 *.egg-info
 .venv/
+.env
 
-# Audio cache & tests
+# Audio & Media Cache
 uploads/
 outputs/
 *.wav
 *.mp3
 *.flac
 *.ogg
+
+# Local Runtime License (Never commit customer or machine licenses to Git)
+data/license.lic
+data/licencas_emitidas.json
+data/licencas_emitidas.txt
+data/stageprompter/lyrics_cache.json
+
+# Scratch & Dev Research Artifacts
+scratch/
+extracted_stageprompter/
+bin/
+test_*.*
+inspect_*.*
+dump_*.*
+find_*.*
+verify_*.*
+patch_*.*
+prewarm_*.*
+search_lyrics_deobf.py
+eval_preload*.js
+*.txt
+*.html
+!static/index.html
+!static/vocal_tools.html
+!static/stageprompter/index.html
+!static/stageprompter/presentation.html
