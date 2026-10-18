@@ -885,7 +885,7 @@
 
     <!-- TELA 9: SUÍTE DE ÁUDIO EMBARCADA (8 FERRAMENTAS VOCAL REMOVER) -->
     <div id="audioSuiteScreen" class="screen">
-      <iframe id="vocalToolsIframe" src="/pt/" title="Ferramentas de Áudio e IA"></iframe>
+      <iframe id="vocalToolsIframe" src="https://tunemusic.tech/pt/" title="Ferramentas de Áudio e IA"></iframe>
     </div>
 
   </main>
@@ -1556,13 +1556,15 @@
             }
           } catch(err) {}
           
-          try {
+            const base = (window.location.protocol === 'file:') ? 'https://tunemusic.tech' : '';
+            const fullUrl = base + path;
             const cur = iframe.contentWindow ? iframe.contentWindow.location.pathname : '';
-            if (cur !== path) {
-              iframe.src = path;
+            if (cur !== path && cur !== fullUrl) {
+              iframe.src = fullUrl;
             }
           } catch(e) {
-            iframe.src = path;
+            const base = (window.location.protocol === 'file:') ? 'https://tunemusic.tech' : '';
+            iframe.src = base + path;
           }
         }
       };
@@ -1650,8 +1652,13 @@
 
       window.checkLicenseState = async function() {
         try {
-          const res = await fetch('/api/license/status');
-          const data = await res.json();
+          let data = null;
+          if (window.api && typeof window.api.getEntitlements === 'function') {
+            data = await window.api.getEntitlements();
+          } else {
+            const res = await fetch('/api/license/status');
+            data = await res.json();
+          }
           currentLicenseData = data;
 
           const actModal = document.getElementById('licenseActivationModal');
@@ -1728,14 +1735,24 @@
         if (feedback) feedback.classList.add('hidden');
 
         try {
-          const res = await fetch('/api/license/activate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ key: key })
-          });
-          const result = await res.json();
+          let result = null;
+          if (window.api && typeof window.api.activateLicense === 'function') {
+            const electronRes = await window.api.activateLicense(key);
+            if (electronRes.valid) {
+              result = { ok: true, message: 'Licença autenticada com sucesso! Liberando acesso...' };
+            } else {
+              result = { ok: false, message: electronRes.reason || 'Chave inválida para este computador.' };
+            }
+          } else {
+            const res = await fetch('/api/license/activate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ key: key })
+            });
+            result = await res.json();
+          }
 
-          if (res.ok && result.ok) {
+          if (result && result.ok) {
             if (feedback) {
               feedback.className = 'lic-feedback-msg success';
               feedback.textContent = '✔️ ' + (result.message || 'Licença autenticada com sucesso! Liberando acesso...');

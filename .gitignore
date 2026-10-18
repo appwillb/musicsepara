@@ -45,5 +45,6 @@ eval_preload*.js
 
 # Installer build artifacts
 dist_installer/
+*.exe
 tunemusic.exe
 

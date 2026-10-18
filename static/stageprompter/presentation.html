@@ -2,10 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <base href="/stageprompter/">
-  <link rel="icon" href="favicon.ico">
-  <title>tunemusic • Telão de Palco & Apresentação</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; connect-src 'self';">
+  <title>Apresentação - tunemusic Pro</title>
   <link rel="stylesheet" href="fonts/fonts.css">
   <style>
     :root {
@@ -131,6 +129,7 @@
       max-width: 65vw;
       max-height: 55vh;
       object-fit: contain;
+      mix-blend-mode: screen; /* Remove fundo preto e destaca as luzes */
       animation: float-glow 5s ease-in-out infinite;
     }
     @keyframes float-glow {
@@ -145,12 +144,10 @@
     }
     .subtitle {
       font-size: 3vmin;
-      color: #ffffff;
+      color: var(--dimmed);
       margin: 0;
-      letter-spacing: 2px;
-      font-weight: 700;
+      letter-spacing: 1px;
       text-transform: uppercase;
-      text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
     }
     
     /* Lyrics Mode */
@@ -650,9 +647,9 @@
   <!-- Welcome / Idle screen -->
   <div id="welcomeScreen" class="welcome-screen">
     <div class="logo-container">
-      <img src="LOGO.png" alt="tunemusic Logo" class="app-logo">
+      <img src="LOGO.png" alt="tunemusic Pro Logo" class="app-logo">
     </div>
-    <p class="subtitle">tunemusic • Teleprompter de Show</p>
+    <p class="subtitle">Apresentação Ativa</p>
   </div>
 
   <!-- Lyrics screen -->
@@ -729,7 +726,6 @@
     Ajustando o cronômetro — arraste o meio para mover, os cantos para o tamanho (o público está vendo)
   </div>
 
-  <script src="presentation_api.js"></script>
   <script src="presentation.js"></script>
 </body>
 </html>

@@ -7,6 +7,8 @@
 
   console.log('[VocalRemover] Initializing Studio Engine...');
 
+  const API_BASE = (window.location.protocol === 'file:') ? 'https://tunemusic.tech' : '';
+
   // State
   let currentTask = null;
   let pollInterval = null;
@@ -494,7 +496,7 @@
       formData.append('file', file);
       formData.append('model', selectedModel);
 
-      const res = await fetch('/split/tracks', {
+      const res = await fetch(API_BASE + '/split/tracks', {
         method: 'POST',
         body: formData
       });
@@ -525,7 +527,7 @@
 
     pollInterval = setInterval(async () => {
       try {
-        const res = await fetch(`/split/status/${taskId}`);
+        const res = await fetch(`${API_BASE}/split/status/${taskId}`);
         if (!res.ok) return;
         const task = await res.json();
 
@@ -543,8 +545,8 @@
               filename: originalFilename || task.filename || 'Audio',
               bpm: task.bpm || 120,
               tonality: task.tonality || 'C',
-              instrumental_url: `/split/listen/music/${taskId}/${task.key || 'stem'}`,
-              vocal_url: `/split/listen/vocal/${taskId}/${task.key || 'stem'}`
+              instrumental_url: `${API_BASE}/split/listen/music/${taskId}/${task.key || 'stem'}`,
+              vocal_url: `${API_BASE}/split/listen/vocal/${taskId}/${task.key || 'stem'}`
             });
             loadRecentTasks();
           }, 600);
@@ -745,7 +747,7 @@
     if (!listEl) return;
 
     try {
-      const res = await fetch('/api/stageprompter/vocal-tasks');
+      const res = await fetch(`${API_BASE}/api/stageprompter/vocal-tasks`);
       if (!res.ok) throw new Error('API off');
       const tasks = await res.json();
 

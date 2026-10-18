@@ -8,6 +8,11 @@ import uuid
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+BASE_DIR = Path(__file__).resolve().parent
+venv_site_packages = BASE_DIR / ".venv" / "Lib" / "site-packages"
+if venv_site_packages.exists() and str(venv_site_packages) not in sys.path:
+    sys.path.insert(0, str(venv_site_packages))
+
 # On Windows, use SelectorEventLoop to prevent WinError 64 / socket disconnection issues
 if sys.platform == "win32":
     try:
@@ -60,6 +65,9 @@ app.add_middleware(
 from stageprompter_engine import router as stageprompter_router
 app.include_router(stageprompter_router)
 
+from admin_license_panel import router as admin_router
+app.include_router(admin_router)
+
 from license_engine import (
     get_system_hwid,
     load_installed_license,
@@ -75,9 +83,12 @@ from license_engine import (
 async def license_gatekeeper_middleware(request, call_next):
     path = request.url.path
     
-    # Allow license management endpoints, static assets, media, and UI shells
+    # Allow license management endpoints, admin panel, installer download, static assets, media, and UI shells
     if (
         path.startswith("/api/license")
+        or path.startswith("/admin")
+        or path.startswith("/api/admin")
+        or path.startswith("/download")
         or path.startswith("/stageprompter")
         or path.startswith("/assets")
         or path.startswith("/fonts")
