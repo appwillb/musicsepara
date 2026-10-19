@@ -22,7 +22,7 @@ if sys.platform == "win32":
 
 from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, Response, RedirectResponse
 
 from fastapi.staticfiles import StaticFiles
 
@@ -123,6 +123,14 @@ async def license_gatekeeper_middleware(request, call_next):
             )
 
     return await call_next(request)
+
+
+OFFICIAL_INSTALLER_URL = "https://github.com/appwillb/musicsepara/releases/download/v1.0.0/tunemusic.Pro.Setup.1.0.0.exe"
+
+@app.get("/download/installer")
+async def download_installer():
+    """Serves official Windows Desktop Setup via high-speed global CDN redirect."""
+    return RedirectResponse(url=OFFICIAL_INSTALLER_URL, status_code=302)
 
 
 @app.get("/api/license/status")
