@@ -2,6 +2,12 @@
 (function() {
   'use strict';
 
+  // If running inside Electron desktop (preload.js provides native window.api), do NOT run web bridge!
+  if (window.api && typeof window.api.readRepertorio === 'function') {
+    console.log('[StagePrompter] Native Electron desktop API detected. Skipping Web Bridge.');
+    return;
+  }
+
   console.log('[StagePrompter] Initializing Web Bridge API...');
 
   const syncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('stageprompter_sync') : null;
