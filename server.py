@@ -105,10 +105,18 @@ async def license_gatekeeper_middleware(request, call_next):
     if path.startswith("/split/tracks") or path.startswith("/api/stageprompter/video") or (path.startswith("/api/stageprompter/") and request.method in ("POST", "PUT", "DELETE")):
         is_licensed, info = load_installed_license()
         if not is_licensed:
+            # Check client header (for Web clients or remote requests)
+            client_key = request.headers.get("x-license-key") or request.headers.get("authorization", "").replace("Bearer ", "").strip()
+            client_hwid = request.headers.get("x-license-hwid", "").strip()
+            if client_key and client_hwid:
+                valid, msg, payload = verify_license_key(client_key, client_hwid)
+                if valid:
+                    return await call_next(request)
+
             return JSONResponse(
                 status_code=403,
                 content={
-                    "detail": "Acesso Bloqueado: Este computador não possui licença ativa do tunemusic Pro.",
+                    "detail": "Acesso Bloqueado: Este computador/dispositivo não possui licença ativa do tunemusic Pro.",
                     "hwid": get_system_hwid(),
                     "message": info.get("message", "Licença necessária para executar esta ação.")
                 }
@@ -127,6 +135,24 @@ async def get_license_status():
 async def get_license_hwid():
     return {
         "hwid": get_system_hwid()
+    }
+
+
+@app.post("/api/license/verify")
+async def verify_license_endpoint(data: dict):
+    key = data.get("key", "").strip()
+    hwid = data.get("hwid", "").strip()
+    if not key or not hwid:
+        raise HTTPException(status_code=400, detail="Chave e ID do computador/dispositivo são obrigatórios.")
+    
+    is_valid, msg, payload = verify_license_key(key, hwid)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=msg)
+    
+    return {
+        "ok": True,
+        "message": msg,
+        "payload": payload
     }
 
 

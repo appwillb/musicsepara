@@ -203,7 +203,7 @@ def verify_license_key(key_str: str, current_hwid: Optional[str] = None) -> Tupl
         if current_hwid is None:
             current_hwid = get_system_hwid()
         
-        if target_hwid != current_hwid.strip().upper():
+        if target_hwid not in ("ALL", "GLOBAL", "UNIVERSAL") and target_hwid != current_hwid.strip().upper():
             return (
                 False,
                 f"Esta licença foi gerada para outro computador (ID: {target_hwid}). O ID deste PC é {current_hwid}.",

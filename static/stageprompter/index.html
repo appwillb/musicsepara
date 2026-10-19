@@ -1532,6 +1532,7 @@
             }
           } catch(err) {}
           
+          try {
             const base = (window.location.protocol === 'file:') ? 'https://tunemusic.tech' : '';
             const fullUrl = base + path;
             const cur = iframe.contentWindow ? iframe.contentWindow.location.pathname : '';
@@ -1644,24 +1645,30 @@
           const badgePlan = document.getElementById('userBadgePlan');
           const badgeExp = document.getElementById('userBadgeExp');
 
-          if (data && data.licensed) {
+          const isLicensed = !!(data && (data.licensed || data.active || data.pro));
+
+          if (isLicensed) {
             // Unlocked state
             if (actModal) actModal.classList.add('hidden');
             if (userBadge) {
               userBadge.style.setProperty('display', 'inline-flex', 'important');
               userBadge.classList.remove('hidden');
-              if (badgeName) badgeName.textContent = data.client || 'tunemusic Pro';
+              if (badgeName) badgeName.textContent = data.client || data.nome || 'tunemusic Pro';
               if (badgePlan) badgePlan.textContent = (data.plan || 'PRO').replace('tunemusic ', '').toUpperCase();
-              if (badgeExp) badgeExp.textContent = data.expires || 'Vitalícia';
+              if (badgeExp) badgeExp.textContent = data.expires || data.expiracao || 'Vitalícia';
             }
+            const licStatus = document.getElementById('licenseStatus');
+            if (licStatus) licStatus.textContent = (data.plan || 'PRO') + ' (Ativo)';
           } else {
             // Locked state (unlicensed)
             if (actModal) actModal.classList.remove('hidden');
-            if (hwidInput && data.hwid) hwidInput.value = data.hwid;
+            if (hwidInput && data && data.hwid) hwidInput.value = data.hwid;
             if (userBadge) {
               userBadge.style.setProperty('display', 'none', 'important');
               userBadge.classList.add('hidden');
             }
+            const licStatus = document.getElementById('licenseStatus');
+            if (licStatus) licStatus.textContent = 'Não Ativado / Sem Licença';
           }
         } catch (err) {
           console.warn('[License Manager] Erro ao verificar licença:', err);
@@ -1717,19 +1724,28 @@
         try {
           let result = null;
           if (window.api && typeof window.api.activateLicense === 'function') {
-            const electronRes = await window.api.activateLicense(key);
-            if (electronRes.valid) {
-              result = { ok: true, message: 'Licença autenticada com sucesso! Liberando acesso...' };
+            const apiRes = await window.api.activateLicense(key);
+            if (apiRes.valid || apiRes.ok) {
+              result = { ok: true, message: apiRes.message || 'Licença autenticada com sucesso! Liberando acesso...' };
             } else {
-              result = { ok: false, message: electronRes.reason || 'Chave inválida para este computador.' };
+              result = { ok: false, message: apiRes.detail || apiRes.error || apiRes.reason || 'Chave inválida para este computador/navegador.' };
             }
           } else {
-            const res = await fetch('/api/license/activate', {
+            const hwidInput = document.getElementById('licMachineIdInput');
+            const hwid = hwidInput ? hwidInput.value : '';
+            const res = await fetch('/api/license/verify', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ key: key })
+              body: JSON.stringify({ key: key, hwid: hwid })
             });
             result = await res.json();
+            if (res.ok && result.ok) {
+              localStorage.setItem('tunemusic_web_license', JSON.stringify({
+                key: key,
+                payload: result.payload,
+                activated_at: new Date().toISOString()
+              }));
+            }
           }
 
           if (result && result.ok) {
@@ -1749,7 +1765,7 @@
           } else {
             if (feedback) {
               feedback.className = 'lic-feedback-msg error';
-              feedback.textContent = '❌ ' + (result.detail || result.message || 'Chave de licença inválida para esta máquina.');
+              feedback.textContent = '❌ ' + (result.detail || result.message || 'Chave de licença inválida para este dispositivo.');
               feedback.classList.remove('hidden');
             }
             if (btn) btn.disabled = false;
@@ -1767,6 +1783,17 @@
           if (btnText) btnText.textContent = '🚀 Ativar tunemusic Pro Agora';
         }
       };
+
+      // Hook Settings "Ativar Pro" button
+      const actBtnInSettings = document.getElementById('activateLicenseBtn');
+      if (actBtnInSettings) {
+        actBtnInSettings.onclick = () => {
+          const cfgModal = document.getElementById('configModal');
+          if (cfgModal) cfgModal.classList.add('hidden');
+          const actModal = document.getElementById('licenseActivationModal');
+          if (actModal) actModal.classList.remove('hidden');
+        };
+      }
 
       window.openLicenseDetails = async function() {
         if (!currentLicenseData) {

@@ -61,6 +61,24 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  // Web Device Fingerprint / Persistent Web HWID (per browser)
+  function getOrCreateWebHwid() {
+    let hwid = localStorage.getItem('tunemusic_web_hwid');
+    if (!hwid) {
+      let part = '';
+      try {
+        const arr = new Uint8Array(8);
+        (window.crypto || window.msCrypto).getRandomValues(arr);
+        part = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+      } catch(e) {
+        part = Math.random().toString(36).substring(2, 10).toUpperCase() + Math.random().toString(36).substring(2, 10).toUpperCase();
+      }
+      hwid = 'TUNE-WEB-' + part.slice(0, 4) + '-' + part.slice(4, 8) + '-' + part.slice(8, 12);
+      localStorage.setItem('tunemusic_web_hwid', hwid);
+    }
+    return hwid;
+  }
+
   window.api = {
     // 1. REPERTOIRE
     readRepertorio: async () => {
@@ -624,88 +642,134 @@
       transcribeProgressCallback = callback;
     },
 
-    // 11. CRYPTOGRAPHIC HARDWARE LICENSING (1 PC LOCK)
+    // 11. CRYPTOGRAPHIC HARDWARE LICENSING (BROWSER & WEB LOCK)
+    getHwid: async () => {
+      return getOrCreateWebHwid();
+    },
+
     getEntitlements: async () => {
+      const hwid = getOrCreateWebHwid();
+      const stored = localStorage.getItem('tunemusic_web_license');
+      if (!stored) {
+        return {
+          licensed: false,
+          pro: false,
+          active: false,
+          nome: 'Não Ativado',
+          plan: 'Sem Licença',
+          expiracao: 'Bloqueado',
+          hwid: hwid
+        };
+      }
       try {
-        const res = await fetch('/api/license/status');
+        const licObj = JSON.parse(stored);
+        if (!licObj || !licObj.key) throw new Error('Dados corrompidos');
+        
+        // Quick verify with server
+        const res = await fetch('/api/license/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: licObj.key, hwid: hwid })
+        });
         const data = await res.json();
-        if (data && data.licensed) {
+        if (res.ok && data.ok) {
           return {
+            licensed: true,
             pro: true,
             active: true,
-            nome: data.client || 'tunemusic Pro',
-            plan: data.plan || 'tunemusic Pro',
-            email: data.email || '',
-            expiracao: data.expires || 'Vitalícia',
+            nome: data.payload.client || 'tunemusic Pro',
+            plan: data.payload.plan || 'tunemusic Pro',
+            email: data.payload.email || '',
+            expiracao: data.payload.expires || 'Vitalícia',
             transcricoesTotal: 9999,
             transcricoesUsadas: 0,
-            hwid: data.hwid
+            hwid: hwid,
+            key: licObj.key
           };
         } else {
+          // Key invalidated or expired
+          localStorage.removeItem('tunemusic_web_license');
           return {
+            licensed: false,
             pro: false,
             active: false,
             nome: 'Não Ativado',
             plan: 'Sem Licença',
             expiracao: 'Bloqueado',
-            hwid: data ? data.hwid : ''
+            hwid: hwid
           };
         }
       } catch (e) {
-        console.warn('[License Engine] Erro ao consultar status da licença:', e);
+        // Fallback for offline cached verification
+        try {
+          const licObj = JSON.parse(stored);
+          if (licObj && licObj.payload) {
+            return {
+              licensed: true,
+              pro: true,
+              active: true,
+              nome: licObj.payload.client || 'tunemusic Pro',
+              plan: licObj.payload.plan || 'tunemusic Pro',
+              expiracao: licObj.payload.expires || 'Vitalícia',
+              hwid: hwid,
+              key: licObj.key
+            };
+          }
+        } catch(err) {}
         return {
+          licensed: false,
           pro: false,
           active: false,
-          nome: 'Sem Conexão',
-          plan: 'Verificando...',
-          expiracao: 'N/A'
+          hwid: hwid
         };
       }
     },
 
     getLicenseStatus: async () => {
-      try {
-        const res = await fetch('/api/license/status');
-        return await res.json();
-      } catch (e) {
-        return { licensed: false, message: e.message };
-      }
-    },
-
-    getHwid: async () => {
-      try {
-        const res = await fetch('/api/license/hwid');
-        const data = await res.json();
-        return data.hwid;
-      } catch (e) {
-        return 'TUNE-ERROR';
-      }
+      return await window.api.getEntitlements();
     },
 
     activateLicense: async (key) => {
+      const hwid = getOrCreateWebHwid();
       try {
-        const res = await fetch('/api/license/activate', {
+        const res = await fetch('/api/license/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: key.trim() })
+          body: JSON.stringify({ key: key.trim(), hwid: hwid })
         });
         const data = await res.json();
         if (res.ok && data.ok) {
-          return { ok: true, pro: true, plan: data.payload.plan, client: data.payload.client, message: data.message };
+          localStorage.setItem('tunemusic_web_license', JSON.stringify({
+            key: key.trim(),
+            payload: data.payload,
+            activated_at: new Date().toISOString()
+          }));
+          return {
+            ok: true,
+            valid: true,
+            pro: true,
+            plan: data.payload.plan,
+            client: data.payload.client,
+            message: data.message || 'Licença autenticada com sucesso! Bem-vindo ao tunemusic Pro.'
+          };
         }
-        return { ok: false, error: data.detail || data.message || 'Chave de licença inválida para esta máquina.' };
+        return {
+          ok: false,
+          valid: false,
+          detail: data.detail || data.message || 'Chave de licença inválida para este navegador.'
+        };
       } catch (e) {
-        return { ok: false, error: 'Erro de comunicação ao validar licença: ' + e.message };
+        return { ok: false, valid: false, detail: 'Erro de conexão ao validar licença: ' + e.message };
       }
     },
 
+    deactivateLicense: async () => {
+      localStorage.removeItem('tunemusic_web_license');
+      return { ok: true, message: 'Licença desativada deste navegador com sucesso.' };
+    },
+
     resetLicense: async () => {
-      try {
-        const res = await fetch('/api/license/reset', { method: 'POST' });
-        return await res.json();
-      } catch (e) {
-        return { ok: false, error: e.message };
-      }
+      return await window.api.deactivateLicense();
     },
 
     hasLead: async () => true,
@@ -715,7 +779,12 @@
     registerLead: async (info) => ({ ok: true }),
 
     onEntitlementsChanged: (callback) => {
-      setTimeout(() => callback({ pro: true }), 100);
+      setTimeout(async () => {
+        try {
+          const st = await window.api.getEntitlements();
+          callback(st);
+        } catch(e) {}
+      }, 50);
     },
 
     openExternalLink: (url) => {

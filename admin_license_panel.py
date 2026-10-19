@@ -118,7 +118,7 @@ async def create_license(data: GenerateRequest):
 
     if not client:
         raise HTTPException(status_code=400, detail="Nome do cliente é obrigatório.")
-    if not hwid.startswith("TUNE-") or len(hwid) < 15:
+    if hwid not in ("ALL", "GLOBAL", "UNIVERSAL") and (not hwid.startswith("TUNE-") or len(hwid) < 15):
         raise HTTPException(status_code=400, detail="ID da máquina inválido. O ID deve começar com TUNE-XXXX-XXXX...")
 
     # Calculate expiration
