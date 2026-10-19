@@ -1633,7 +1633,11 @@
           if (window.api && typeof window.api.getEntitlements === 'function') {
             data = await window.api.getEntitlements();
           } else {
-            const res = await fetch('/api/license/status');
+            const hwid = localStorage.getItem('tunemusic_web_hwid') || '';
+            const licStored = localStorage.getItem('tunemusic_web_license');
+            let key = '';
+            try { if (licStored) key = JSON.parse(licStored).key || ''; } catch(e) {}
+            const res = await fetch(`/api/license/status?hwid=${encodeURIComponent(hwid)}&key=${encodeURIComponent(key)}`);
             data = await res.json();
           }
           currentLicenseData = data;
@@ -1654,8 +1658,22 @@
               userBadge.style.setProperty('display', 'inline-flex', 'important');
               userBadge.classList.remove('hidden');
               if (badgeName) badgeName.textContent = data.client || data.nome || 'tunemusic Pro';
-              if (badgePlan) badgePlan.textContent = (data.plan || 'PRO').replace('tunemusic ', '').toUpperCase();
-              if (badgeExp) badgeExp.textContent = data.expires || data.expiracao || 'Vitalícia';
+              if (badgePlan) {
+                const cleanPlan = (data.plan || 'PRO').replace(/tunemusic\s*/i, '').trim();
+                badgePlan.textContent = cleanPlan.toUpperCase();
+              }
+              if (badgeExp) {
+                const expVal = data.exp || data.expires;
+                if (expVal && expVal !== 'Vitalícia' && expVal !== 'vitalícia' && expVal !== 'Bloqueado') {
+                  const parts = String(expVal).slice(0, 10).split('-');
+                  const brDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : expVal;
+                  const diffMs = new Date(expVal + 'T23:59:59') - new Date();
+                  const diffDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+                  badgeExp.textContent = diffDays > 0 ? `${diffDays} dias (${brDate})` : `Expira hoje (${brDate})`;
+                } else {
+                  badgeExp.textContent = 'Vitalícia';
+                }
+              }
             }
             const licStatus = document.getElementById('licenseStatus');
             if (licStatus) licStatus.textContent = (data.plan || 'PRO') + ' (Ativo)';
@@ -1805,11 +1823,22 @@
         const modal = document.getElementById('licenseDetailsModal');
         if (!modal) return;
 
-        document.getElementById('ldClientName').textContent = currentLicenseData.client || 'Produtor Musical';
-        document.getElementById('ldPlan').textContent = currentLicenseData.plan || 'tunemusic Pro Vitalício';
-        document.getElementById('ldExpires').textContent = currentLicenseData.expires || 'Vitalícia';
+        document.getElementById('ldClientName').textContent = currentLicenseData.client || currentLicenseData.nome || 'Produtor Musical';
+        document.getElementById('ldPlan').textContent = currentLicenseData.plan || 'tunemusic Pro';
+        
+        const expVal = currentLicenseData.exp || currentLicenseData.expires;
+        if (expVal && expVal !== 'Vitalícia' && expVal !== 'vitalícia' && expVal !== 'Bloqueado') {
+          const parts = String(expVal).slice(0, 10).split('-');
+          const brDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : expVal;
+          const diffMs = new Date(expVal + 'T23:59:59') - new Date();
+          const diffDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+          document.getElementById('ldExpires').textContent = `Válido até ${brDate} (${diffDays} dias restantes)`;
+        } else {
+          document.getElementById('ldExpires').textContent = 'Vitalícia (Sem expiração)';
+        }
+        
         document.getElementById('ldHwid').textContent = currentLicenseData.hwid || '-';
-        document.getElementById('ldIssued').textContent = currentLicenseData.issued || '18/10/2026';
+        document.getElementById('ldIssued').textContent = currentLicenseData.issued || '-';
 
         modal.classList.remove('hidden');
       };
@@ -1820,10 +1849,11 @@
       };
 
       window.deactivateCurrentLicense = async function() {
-        if (!confirm('Tem certeza de que deseja desativar a licença deste computador? O sistema voltará ao estado bloqueado até que uma nova chave seja inserida.')) {
+        if (!confirm('Tem certeza de que deseja desativar a licença deste computador/navegador? O sistema voltará ao estado bloqueado até que uma nova chave seja inserida.')) {
           return;
         }
         try {
+          localStorage.removeItem('tunemusic_web_license');
           if (window.api && typeof window.api.deactivateLicense === 'function') {
             await window.api.deactivateLicense();
           } else {

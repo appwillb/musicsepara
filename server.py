@@ -20,7 +20,7 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, Response, RedirectResponse
 
@@ -134,9 +134,52 @@ async def download_installer():
 
 
 @app.get("/api/license/status")
-async def get_license_status():
+async def get_license_status(request: Request):
+    client_key = (request.headers.get("x-license-key") or request.query_params.get("key") or "").strip()
+    client_hwid = (request.headers.get("x-license-hwid") or request.query_params.get("hwid") or "").strip()
+    
+    if client_key and client_hwid:
+        valid, msg, payload = verify_license_key(client_key, client_hwid)
+        if valid and payload:
+            exp_date = payload.get("expires")
+            return {
+                "licensed": True,
+                "pro": True,
+                "active": True,
+                "hwid": client_hwid,
+                "client": payload.get("client", "tunemusic Pro"),
+                "nome": payload.get("client", "tunemusic Pro"),
+                "email": payload.get("email", ""),
+                "plan": payload.get("plan", "tunemusic Pro"),
+                "issued": payload.get("issued", ""),
+                "expires": exp_date,
+                "exp": exp_date,
+                "expiracao": exp_date or "Vitalícia",
+                "expiresDisplay": payload.get("expiresDisplay") or (f"Válido até {exp_date}" if exp_date else "Vitalícia (Sem expiração)"),
+                "isLifetime": not bool(exp_date),
+                "message": msg
+            }
+        else:
+            return {
+                "licensed": False,
+                "pro": False,
+                "active": False,
+                "hwid": client_hwid,
+                "message": msg or "Licença inválida ou expirada."
+            }
+
+    # Desktop local fallback only if physical local license file exists
     is_licensed, info = load_installed_license()
-    return info
+    if is_licensed:
+        return info
+
+    return {
+        "licensed": False,
+        "pro": False,
+        "active": False,
+        "hwid": get_system_hwid(),
+        "message": "Nenhuma licença informada neste navegador."
+    }
 
 
 @app.get("/api/license/hwid")

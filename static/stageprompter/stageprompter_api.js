@@ -15,6 +15,18 @@
   let presentationClosedCallback = null;
   let presentationKeyCallback = null;
   let stopwatchBoxCallback = null;
+  const entitlementsCallbacks = [];
+
+  async function notifyEntitlements(forcedEnt) {
+    try {
+      const ent = forcedEnt || (window.api && typeof window.api.getEntitlements === 'function' ? await window.api.getEntitlements() : null);
+      if (ent) {
+        for (const cb of entitlementsCallbacks) {
+          try { cb(ent); } catch (e) {}
+        }
+      }
+    } catch(e) {}
+  }
 
   // Listen to cross-window sync messages
   if (syncChannel) {
@@ -656,9 +668,15 @@
           pro: false,
           active: false,
           nome: 'Não Ativado',
+          client: 'Não Ativado',
           plan: 'Sem Licença',
+          expires: null,
+          exp: null,
           expiracao: 'Bloqueado',
-          hwid: hwid
+          expiresDisplay: 'Não Ativado',
+          isLifetime: false,
+          hwid: hwid,
+          key: null
         };
       }
       try {
@@ -673,14 +691,21 @@
         });
         const data = await res.json();
         if (res.ok && data.ok) {
+          const payload = data.payload || {};
+          const expDate = payload.expires || null;
           return {
             licensed: true,
             pro: true,
             active: true,
-            nome: data.payload.client || 'tunemusic Pro',
-            plan: data.payload.plan || 'tunemusic Pro',
-            email: data.payload.email || '',
-            expiracao: data.payload.expires || 'Vitalícia',
+            nome: payload.client || 'tunemusic Pro',
+            client: payload.client || 'tunemusic Pro',
+            plan: payload.plan || 'tunemusic Pro',
+            email: payload.email || '',
+            expires: expDate,
+            exp: expDate,
+            expiracao: expDate ? `Válido até ${expDate}` : 'Vitalícia',
+            expiresDisplay: expDate ? `Válido até ${expDate}` : 'Vitalícia (Sem expiração)',
+            isLifetime: !expDate,
             transcricoesTotal: 9999,
             transcricoesUsadas: 0,
             hwid: hwid,
@@ -694,23 +719,37 @@
             pro: false,
             active: false,
             nome: 'Não Ativado',
+            client: 'Não Ativado',
             plan: 'Sem Licença',
+            expires: null,
+            exp: null,
             expiracao: 'Bloqueado',
-            hwid: hwid
+            expiresDisplay: 'Não Ativado',
+            isLifetime: false,
+            hwid: hwid,
+            key: null
           };
         }
       } catch (e) {
         // Fallback for offline cached verification
         try {
           const licObj = JSON.parse(stored);
-          if (licObj && licObj.payload) {
+          if (licObj && (licObj.payload || licObj.key)) {
+            const payload = licObj.payload || {};
+            const expDate = payload.expires || null;
             return {
               licensed: true,
               pro: true,
               active: true,
-              nome: licObj.payload.client || 'tunemusic Pro',
-              plan: licObj.payload.plan || 'tunemusic Pro',
-              expiracao: licObj.payload.expires || 'Vitalícia',
+              nome: payload.client || 'tunemusic Pro',
+              client: payload.client || 'tunemusic Pro',
+              plan: payload.plan || 'tunemusic Pro',
+              email: payload.email || '',
+              expires: expDate,
+              exp: expDate,
+              expiracao: expDate ? `Válido até ${expDate}` : 'Vitalícia',
+              expiresDisplay: expDate ? `Válido até ${expDate}` : 'Vitalícia (Sem expiração)',
+              isLifetime: !expDate,
               hwid: hwid,
               key: licObj.key
             };
@@ -720,7 +759,16 @@
           licensed: false,
           pro: false,
           active: false,
-          hwid: hwid
+          nome: 'Não Ativado',
+          client: 'Não Ativado',
+          plan: 'Sem Licença',
+          expires: null,
+          exp: null,
+          expiracao: 'Bloqueado',
+          expiresDisplay: 'Não Ativado',
+          isLifetime: false,
+          hwid: hwid,
+          key: null
         };
       }
     },
@@ -744,12 +792,17 @@
             payload: data.payload,
             activated_at: new Date().toISOString()
           }));
+          const newEnt = await window.api.getEntitlements();
+          notifyEntitlements(newEnt);
           return {
             ok: true,
             valid: true,
             pro: true,
             plan: data.payload.plan,
             client: data.payload.client,
+            nome: data.payload.client,
+            expires: data.payload.expires,
+            exp: data.payload.expires,
             message: data.message || 'Licença autenticada com sucesso! Bem-vindo ao tunemusic Pro.'
           };
         }
@@ -765,6 +818,8 @@
 
     deactivateLicense: async () => {
       localStorage.removeItem('tunemusic_web_license');
+      const lockedEnt = await window.api.getEntitlements();
+      notifyEntitlements(lockedEnt);
       return { ok: true, message: 'Licença desativada deste navegador com sucesso.' };
     },
 
@@ -772,19 +827,35 @@
       return await window.api.deactivateLicense();
     },
 
-    hasLead: async () => true,
+    hasLead: async () => {
+      const stored = localStorage.getItem('tunemusic_web_license');
+      return !!stored;
+    },
 
-    getLeadInfo: async () => ({ nome: 'tunemusic Pro', plano: 'Pro' }),
+    getLeadInfo: async () => {
+      const stored = localStorage.getItem('tunemusic_web_license');
+      if (stored) {
+        try {
+          const lic = JSON.parse(stored);
+          const client = (lic && lic.payload && lic.payload.client) || 'tunemusic Pro';
+          return { nome: client, plano: 'Pro' };
+        } catch(e) {}
+      }
+      return { nome: '', plano: 'free' };
+    },
 
     registerLead: async (info) => ({ ok: true }),
 
     onEntitlementsChanged: (callback) => {
-      setTimeout(async () => {
-        try {
-          const st = await window.api.getEntitlements();
-          callback(st);
-        } catch(e) {}
-      }, 50);
+      if (typeof callback === 'function') {
+        entitlementsCallbacks.push(callback);
+        setTimeout(async () => {
+          try {
+            const st = await window.api.getEntitlements();
+            callback(st);
+          } catch(e) {}
+        }, 50);
+      }
     },
 
     openExternalLink: (url) => {

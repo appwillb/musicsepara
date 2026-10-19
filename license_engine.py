@@ -214,12 +214,18 @@ def verify_license_key(key_str: str, current_hwid: Optional[str] = None) -> Tupl
         exp_date_str = payload.get("expires")
         if exp_date_str:
             try:
-                exp_date = datetime.strptime(exp_date_str, "%Y-%m-%d")
+                exp_date = datetime.strptime(exp_date_str, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
                 if datetime.now() > exp_date:
                     return False, f"Esta licença expirou em {exp_date_str}.", payload
             except Exception:
                 pass
-        
+
+        # Normalize schema for compatibility across Desktop and Web
+        payload["exp"] = payload.get("expires")
+        payload["nome"] = payload.get("client")
+        payload["isLifetime"] = not bool(payload.get("expires"))
+        payload["expiresDisplay"] = f"Válido até {payload['expires']}" if payload.get("expires") else "Vitalícia (Sem expiração)"
+
         return True, "Licença autêntica e válida para este computador!", payload
 
     except Exception as e:
@@ -235,6 +241,8 @@ def load_installed_license() -> Tuple[bool, Dict[str, Any]]:
     if not LICENSE_FILE.exists():
         return False, {
             "licensed": False,
+            "pro": False,
+            "active": False,
             "hwid": current_hwid,
             "message": "Nenhuma licença instalada. Ative seu tunemusic Pro para liberar o sistema."
         }
@@ -246,25 +254,37 @@ def load_installed_license() -> Tuple[bool, Dict[str, Any]]:
         
         is_valid, msg, payload = verify_license_key(key, current_hwid)
         if is_valid and payload:
+            exp_date = payload.get("expires")
             return True, {
                 "licensed": True,
+                "pro": True,
+                "active": True,
                 "hwid": current_hwid,
                 "client": payload.get("client", "Músico Pro"),
+                "nome": payload.get("client", "Músico Pro"),
                 "email": payload.get("email", ""),
                 "plan": payload.get("plan", "tunemusic Pro"),
                 "issued": payload.get("issued", ""),
-                "expires": payload.get("expires") or "Vitalícia",
+                "expires": exp_date,
+                "exp": exp_date,
+                "expiracao": exp_date or "Vitalícia",
+                "expiresDisplay": f"Válido até {exp_date}" if exp_date else "Vitalícia (Sem expiração)",
+                "isLifetime": not bool(exp_date),
                 "message": "Licença ativa e autenticada neste computador."
             }
         else:
             return False, {
                 "licensed": False,
+                "pro": False,
+                "active": False,
                 "hwid": current_hwid,
                 "message": msg or "Licença inválida para este computador."
             }
     except Exception as e:
         return False, {
             "licensed": False,
+            "pro": False,
+            "active": False,
             "hwid": current_hwid,
             "message": f"Erro ao ler arquivo de licença: {str(e)}"
         }
