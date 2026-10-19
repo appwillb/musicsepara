@@ -996,9 +996,9 @@
             <li><span class="check">✓</span> <span>Licença para 1 Computador</span></li>
             <li><span class="check">✓</span> <span>Suporte via WhatsApp</span></li>
           </ul>
-          <a href="https://api.whatsapp.com/send?phone=5562982105151&text=Ol%C3%A1!%20Gostaria%20de%20assinar%20o%20Plano%20Mensal%20do%20tunemusic%20Pro%20(R$%2029,90/m%C3%AAs)." target="_blank" class="btn btn-outline" style="width: 100%;">
+          <button type="button" onclick="solicitarPlano('Mensal');" class="btn btn-outline" style="width: 100%;">
             <span>💬 Assinar Mensal</span>
-          </a>
+          </button>
         </div>
 
         <!-- PLAN 2: VITALÍCIO (FEATURED) -->
@@ -1020,9 +1020,9 @@
             <li><span class="check" style="color:#ffd700;">✓</span> <span>Todas as futuras atualizações gratuitas</span></li>
             <li><span class="check" style="color:#ffd700;">✓</span> <span>Prioridade VIP no Atendimento WhatsApp</span></li>
           </ul>
-          <a href="https://api.whatsapp.com/send?phone=5562982105151&text=Ol%C3%A1!%20Quero%20adquirir%20a%20Licen%C3%A7a%20PRO%20Vital%C3%ADcia%20do%20tunemusic%20Pro%20(R$%20197,00)!" target="_blank" class="btn btn-gold" style="width: 100%; font-size: 1.05rem; padding: 15px;">
+          <button type="button" onclick="solicitarPlano('Vitalício');" class="btn btn-gold" style="width: 100%; font-size: 1.05rem; padding: 15px;">
             <span>👑 Quero a Licença Vitalícia</span>
-          </a>
+          </button>
         </div>
 
         <!-- PLAN 3: ANUAL / BANDA -->
@@ -1042,9 +1042,9 @@
             <li><span class="check">✓</span> <span>Pagamento único sem mensalidade</span></li>
             <li><span class="check">✓</span> <span>Suporte e treinamento rápido</span></li>
           </ul>
-          <a href="https://api.whatsapp.com/send?phone=5562982105151&text=Ol%C3%A1!%20Tenho%20interesse%20no%20Combo%20Banda/Igreja%20do%20tunemusic%20Pro%20(R$%20349,00)." target="_blank" class="btn btn-outline" style="width: 100%;">
+          <button type="button" onclick="solicitarPlano('Combo Banda');" class="btn btn-outline" style="width: 100%;">
             <span>🎸 Falar com Especialista</span>
-          </a>
+          </button>
         </div>
       </div>
     </div>
@@ -1095,9 +1095,9 @@
         <h3 class="cta-title">Pronto para Elevar o Nível do Seu Show?</h3>
         <p class="cta-desc">Junte-se a cantores, bandas e igrejas que usam o tunemusic Pro para apresentações impecáveis e profissionais.</p>
         <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
-          <a href="https://api.whatsapp.com/send?phone=5562982105151&text=Ol%C3%A1!%20Quero%20adquirir%20minha%20licen%C3%A7a%20do%20tunemusic%20Pro!" target="_blank" class="btn btn-whatsapp" style="font-size:1.05rem;padding:15px 32px;">
-            <span>📱 Falar no WhatsApp</span>
-          </a>
+          <button type="button" onclick="solicitarPlano('Geral');" class="btn btn-whatsapp" style="font-size:1.05rem;padding:15px 32px;">
+            <span>📱 Falar com Atendimento</span>
+          </button>
           <a href="/download/installer" class="btn btn-primary" style="font-size:1.05rem;padding:15px 32px;">
             <span>⬇️ Baixar Instalador Windows</span>
           </a>
@@ -1105,6 +1105,12 @@
       </div>
     </div>
   </section>
+
+  <script>
+    function solicitarPlano(plano) {
+      alert('Atendimento & Aquisição tunemusic Pro:\n\nNosso novo canal oficial de atendimento via WhatsApp está sendo ativado e estará disponível nas próximas horas!\n\nEnquanto isso, você já pode baixar o Instalador Oficial para Windows e testar o tunemusic Pro no seu computador.');
+    }
+  </script>
 
   <!-- FOOTER -->
   <footer class="footer">
